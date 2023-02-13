@@ -1,8 +1,8 @@
 #ifndef INC_1_CRYPTANALYSIS_UI_H
 #define INC_1_CRYPTANALYSIS_UI_H
 
-#include <ncurses.h>
-#include <ncursesw/ncurses.h>
+//#include <ncurses.h>
+#include <ncursesw/curses.h>
 
 #include "fs.h"
 #include "analysis.h"

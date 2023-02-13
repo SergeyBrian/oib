@@ -1,22 +1,22 @@
 #include "analysis.h"
 
-analysis_state state;
+static analysis_state state;
 
-void measure_letters_frequency(wchar_t *string, double frequencies_ptr[ALPHABET_SIZE]){
-    unsigned int l = wcslen(string);
+void measure_letters_frequency(){
+    unsigned int l = wcslen(state.string);
     unsigned int letters_count = 0;
 
     for (int i = 0; i < l; i++) {
-        if (!iswalpha(string[i])) {
+        if (!iswalpha(state.string[i])) {
             continue;
         }
 
-        frequencies_ptr[wchar_to_array_index(string[i])]++;
+        state.frequencies[wchar_to_array_index(state.string[i])]++;
         letters_count++;
     }
 
     for (int i = 0; i < ALPHABET_SIZE; i++) {
-        frequencies_ptr[i] /= letters_count;
+        state.frequencies[i] /= letters_count;
     }
 }
 
@@ -90,6 +90,28 @@ void analysis_init() {
 
 wchar_t *get_source_string() {
     return state.string;
+}
+
+double *get_frequencies() {
+    return state.frequencies;
+}
+
+void match_frequencies(const double freq1[], const double freq2[], int matches[]) {
+
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        double min_diff = 100;
+        int min_diff_index = 0;
+
+        for (int j = 0; j < ALPHABET_SIZE; j++) {
+            double diff = fabs(freq1[i] - freq2[j]);
+            if (diff > MAX_FREQUENCY_DIFFERENCE) continue;
+            if (diff < min_diff) {
+                min_diff = diff;
+                min_diff_index = j;
+            }
+        }
+        matches[i] = min_diff_index;
+    }
 }
 
 

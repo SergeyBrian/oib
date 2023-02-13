@@ -1,5 +1,7 @@
 #include "fs.h"
 
+FILE *input_file;
+
 int open_file(char *filename) {
     input_file = fopen(filename, "r");
     return (input_file != NULL);

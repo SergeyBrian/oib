@@ -1,4 +1,5 @@
 #include <locale.h>
+#include <string.h>
 
 #include "ui.h"
 #include "utils.h"
@@ -35,24 +36,27 @@ void parse_arguments(int argc, char **argv, char **params_ptr) {
     }
 }
 
-void on_user_input(int c) {
-    switch(c) {
-        case 'q':
-            quit();
-        default:
-            break;
-    }
-}
-
 int main(int argc, char **argv) {
     setlocale(LC_ALL, "ru_RU.UTF-8");
-
     ui_init();
     ui_set_page(FILE_SELECTOR);
 
-    while (getch() != 'q') {
-        ui_update();
+    char *params[20] = {0};
+
+    if (argc > 1) {
+        parse_arguments(argc, argv, params);
     }
+
+    if (params[INPUT_FILE_NAME] != NULL) {
+        if (open_file(params[INPUT_FILE_NAME])) {
+            ui_set_page(MAIN_PAGE);
+        }
+    }
+
+
+    do {
+        ui_update();
+    } while (1);
 
     quit();
     return 0;

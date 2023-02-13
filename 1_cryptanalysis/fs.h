@@ -7,7 +7,6 @@
 
 #include "utils.h"
 
-FILE *input_file;
 
 int open_file(char *filename);
 wchar_t *readfile();

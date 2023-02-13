@@ -36,3 +36,26 @@ int wchar_to_array_index(wchar_t c) {
 int absolute_index(int i, int array_size) {
     return i % array_size;
 }
+
+void sort_indexes(const double arr[], int *indexes) {
+
+    double temp;
+    int tempIndex;
+
+
+    // Initialize the indexes array
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        indexes[i] = i;
+    }
+
+    // Sort the indexes based on the elements of the array
+    for (int i = 0; i < ALPHABET_SIZE - 1; i++) {
+        for (int j = i + 1; j < ALPHABET_SIZE; j++) {
+            if (arr[indexes[j]] > arr[indexes[i]]) {
+                tempIndex = indexes[i];
+                indexes[i] = indexes[j];
+                indexes[j] = tempIndex;
+            }
+        }
+    }
+}
