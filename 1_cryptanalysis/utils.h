@@ -15,6 +15,7 @@ void error_exit(const char *message);
 int most_frequent_value(const int *arr, int size);
 void sort_indexes(const double arr[], int *indexes);
 void sort_words_by_length(const wchar_t *input_str, wchar_t *words[], wchar_t *to_free[]);
+void sort_words_by_decoded_letters(const wchar_t* input_str, wchar_t *words[], wchar_t *words_ptr[]);
 void quit();
 
 

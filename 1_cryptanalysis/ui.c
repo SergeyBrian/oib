@@ -34,7 +34,8 @@ void ui_init() {
     controls_tab = newwin(4, COLS - 3, LINES - 5, 1);
     words_tab = newwin(WORDS_TAB_HEIGHT, WORDS_TAB_WIDTH, 1 + LINES / 2, 1);
     frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1, 2 * COLS / 3 + 1);
-    expected_frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1, 2 * COLS / 3 + (COLS / 3 - 2) / 2 + 1);
+    expected_frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1,
+                                      2 * COLS / 3 + (COLS / 3 - 2) / 2 + 1);
 }
 
 void ui_set_page(ui_page page) {
@@ -80,7 +81,7 @@ void draw_controls_tab() {
 void draw_words_by_letters_count() {
     wchar_t *words[MAX_WORDS] = {0};
     wchar_t *to_free[MAX_WORDS] = {0};
-    sort_words_by_length((state.show_decoded) ? get_decoded_string() : get_source_string(), words, to_free);
+    sort_words_by_length((state.show_decoded) ? apply_key() : get_source_string(), words, to_free);
 
     int x = 2;
     int y = 2;
@@ -98,8 +99,29 @@ void draw_words_by_letters_count() {
     wrefresh(words_tab);
 }
 
+void draw_words_by_decoded_letters_count() {
+    wchar_t *words[MAX_WORDS] = {0};
+    wchar_t *to_free[MAX_WORDS] = {0};
+    sort_words_by_decoded_letters(apply_key(), words, to_free);
+
+    int x = 2;
+    int y = 2;
+    for (int i = 0; words[i] != NULL; i++) {
+        mvwprintw(words_tab, y, x, "%S ", words[i]);
+        x += wcslen(words[i]) + 1;
+        if (x + ((words[i + 1]) ? wcslen(words[i + 1]) : 0) >= (2 * COLS / 3) - 5) {
+            y++;
+            x = 2;
+        }
+    }
+    for (int i = 0; i < MAX_WORDS; i++) {
+        free(to_free[i]);
+    }
+    wrefresh(words_tab);
+}
 
 void draw_words_tab() {
+    wclear(words_tab);
     box(words_tab, 0, 0);
     wchar_t *tab_label;
     switch (state.word_view_mode) {
@@ -114,18 +136,20 @@ void draw_words_tab() {
             break;
     }
     mvwprintw(words_tab, 0, 1, "%S%S", tab_label,
-              (state.word_view_mode != WORD_ANALYSIS) ? ((state.show_decoded) ? L" (Расшифрованные)" : L" (Исходные)")
-                                                      : L"");
-    wrefresh(words_tab);
+              (state.word_view_mode == VIEW_BY_LETTERS_COUNT) ? ((state.show_decoded) ? L" (Расшифрованные)"
+                                                                                      : L" (Исходные)")
+                                                              : L"");
     switch (state.word_view_mode) {
         case VIEW_BY_LETTERS_COUNT:
             draw_words_by_letters_count();
             break;
         case VIEW_BY_DECODED_LETTERS_COUNT:
+            draw_words_by_decoded_letters_count();
             break;
         case WORD_ANALYSIS:
             break;
     }
+    wrefresh(words_tab);
 }
 
 void draw_frequencies_tab() {

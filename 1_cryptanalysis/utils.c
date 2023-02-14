@@ -64,9 +64,22 @@ void sort_indexes(const double arr[], int *indexes) {
     }
 }
 
-void sort_words_by_length(const wchar_t* input_str, wchar_t *words[], wchar_t *words_ptr[]) {
-    wchar_t* str_copy = wcsdup(input_str);
-    wchar_t* p = str_copy;
+
+int count_decoded_letters(wchar_t *word) {
+    unsigned int l = wcslen(word);
+    int count = 0;
+    for (int i = 0; i < l; i++) {
+        if (iswlower(word[i])) count++;
+    }
+
+    return count;
+}
+
+void
+sort_words_by_function(const wchar_t *input_str, wchar_t *words[], wchar_t *to_free[], unsigned long (*func)(wchar_t *),
+                       int desc) {
+    wchar_t *str_copy = wcsdup(input_str);
+    wchar_t *p = str_copy;
     int word_count = 0;
 
     unsigned int l = wcslen(str_copy);
@@ -82,21 +95,21 @@ void sort_words_by_length(const wchar_t* input_str, wchar_t *words[], wchar_t *w
         if (*p == L'\0') {
             break;
         }
-        wchar_t* start = p;
+        wchar_t *start = p;
         while (*p != L'\0' && !iswspace(*p)) {
             ++p;
         }
         *p = L'\0';
         ++p;
         words[word_count] = (wchar_t *) malloc(sizeof(wchar_t) * (wcslen(start) + 1));
-        words_ptr[word_count] = words[word_count];
+        to_free[word_count] = words[word_count];
         wcscpy(words[word_count++], start);
     }
 
     for (int i = 0; i < word_count - 1; ++i) {
         for (int j = i + 1; j < word_count; ++j) {
-            if (wcslen(words[i]) > wcslen(words[j])) {
-                wchar_t* temp = words[i];
+            if ((desc) ? func(words[i]) < func(words[j]) : func(words[i]) > func(words[j])) {
+                wchar_t *temp = words[i];
                 words[i] = words[j];
                 words[j] = temp;
             }
@@ -121,5 +134,13 @@ void sort_words_by_length(const wchar_t* input_str, wchar_t *words[], wchar_t *w
     words[unique_count] = NULL;
 
     free(str_copy);
+}
+
+void sort_words_by_length(const wchar_t *input_str, wchar_t *words[], wchar_t *to_free[]) {
+    sort_words_by_function(input_str, words, to_free, (unsigned long (*)(wchar_t *)) wcslen, false);
+}
+
+void sort_words_by_decoded_letters(const wchar_t *input_str, wchar_t *words[], wchar_t *to_free[]) {
+    sort_words_by_function(input_str, words, to_free, (unsigned long (*)(wchar_t *)) count_decoded_letters, true);
 }
 
