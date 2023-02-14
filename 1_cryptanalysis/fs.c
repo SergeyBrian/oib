@@ -19,7 +19,7 @@ wchar_t *readfile() {
     for (int i = 0; i < l; i++) {
         if (buff[i] == L'ё' || buff[i] == L'Ё') buff[i] = L'е';
 
-        buff[i] = (wchar_t) towlower(buff[i]);
+        buff[i] = (wchar_t) towupper(buff[i]);
     }
 
     return buff;

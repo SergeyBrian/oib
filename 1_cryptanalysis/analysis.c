@@ -79,7 +79,7 @@ wchar_t *apply_key() {
             state.decoded_string[i] = state.string[i];
             continue;
         }
-        state.decoded_string[i] = ALPHABET_RU[state.key[wchar_to_array_index(state.string[i])]];
+        state.decoded_string[i] = LOWERCASE_ALPHABET_RU[state.key[wchar_to_array_index(state.string[i])]];
     }
 
 
@@ -118,16 +118,17 @@ void match_frequencies(const double freq1[], const double freq2[], int matches[]
         double min_diff = 100;
         int min_diff_index = -1;
 
-        for (int j = 0; j < ALPHABET_SIZE; j++) {
-            double diff = fabs(freq1[i] - freq2[j]);
-            if (diff > MAX_FREQUENCY_DIFFERENCE) continue;
-            if (diff < min_diff) {
-                min_diff = diff;
-                min_diff_index = j;
+        if (freq1[i] >= MIN_FREQUENCY)
+            for (int j = 0; j < ALPHABET_SIZE; j++) {
+                double diff = fabs(freq1[i] - freq2[j]);
+                if (diff > MAX_FREQUENCY_DIFFERENCE) continue;
+                if (diff < min_diff) {
+                    min_diff = diff;
+                    min_diff_index = j;
+                }
             }
-        }
         int index_already_used = 0;
-        for (int j = 0; j < ALPHABET_SIZE; j++) {
+        for (int j = 0; min_diff_index != -1 && j < ALPHABET_SIZE; j++) {
             if (matches[j] == min_diff_index) {
                 index_already_used = 1;
                 break;

@@ -77,17 +77,16 @@ void draw_frequencies_tab() {
 
 void main_page() {
     noecho();
-    clear();
-    refresh();
     int width = 2 * COLS / 3;
     WINDOW *top_window = newwin(LINES / 2, width, 1, 1);
-    box(top_window, 0, 0);
     analysis_init();
     sort_indexes(get_frequencies(), state.indexes);
     sort_indexes(FREQUENCIES_RU, state.expected_indexes);
     int ch;
     int *key = get_key_ptr();
     do {
+        wclear(top_window);
+        refresh();
         if (ch) {
             switch (ch) {
                 case KEY_DOWN:
@@ -116,6 +115,7 @@ void main_page() {
         for (int i = 0; (i * (width - 5)) < l; i++)
             mvwaddnwstr(top_window, 1 + i, 2, string + i * (width - 5), width - 5);
 
+        box(top_window, 0, 0);
         mvwprintw(top_window, 0, 1, (state.show_decoded) ? "Decoded text" : "Source text");
         wrefresh(top_window);
         draw_frequencies_tab();

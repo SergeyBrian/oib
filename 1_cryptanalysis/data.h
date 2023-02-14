@@ -4,14 +4,16 @@
 #include <wchar.h>
 
 #define ALPHABET_SIZE 32
-#define FIRST_ALPHABET_LETTER_WCHAR_VALUE 1072
-#define MAX_FREQUENCY_DIFFERENCE 0.0005
+#define FIRST_ALPHABET_LETTER_WCHAR_VALUE 1040
+#define MAX_FREQUENCY_DIFFERENCE 0.01
+#define MIN_FREQUENCY 0.1
 
 extern const wchar_t *MOST_FREQUENT_TRIGRAM_RU;
 extern const wchar_t *MOST_FREQUENT_BIGRAM_RU;
 extern const wchar_t *MOST_FREQUENT_LETTER_RU;
 
 extern const wchar_t *ALPHABET_RU;
+extern const wchar_t *LOWERCASE_ALPHABET_RU;
 
 extern const double FREQUENCIES_RU[];
 

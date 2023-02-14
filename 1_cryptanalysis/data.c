@@ -4,7 +4,8 @@ const wchar_t *MOST_FREQUENT_TRIGRAM_RU = L"ени";
 const wchar_t *MOST_FREQUENT_BIGRAM_RU = L"ст";
 const wchar_t *MOST_FREQUENT_LETTER_RU = L"о";
 
-const wchar_t *ALPHABET_RU = L"абвгдежзийклмнопрстуфхцчшщъыьэюя";
+const wchar_t *LOWERCASE_ALPHABET_RU = L"абвгдежзийклмнопрстуфхцчшщъыьэюя";
+const wchar_t *ALPHABET_RU = L"АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
 
 const double FREQUENCIES_RU[] = {
         0.0799, // а
