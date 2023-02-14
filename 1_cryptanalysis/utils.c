@@ -34,7 +34,11 @@ int wchar_to_array_index(wchar_t c) {
 }
 
 int absolute_index(int i, int array_size) {
-    return i % array_size;
+    i = i % array_size;
+    if (i < 0) {
+        i = array_size - i - 2;
+    }
+    return i;
 }
 
 void sort_indexes(const double arr[], int *indexes) {

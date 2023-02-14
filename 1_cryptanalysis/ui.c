@@ -5,9 +5,9 @@ static ui_state state;
 void ui_init() {
     initscr();
     echo();
-    halfdelay(1);
     state.height = LINES;
     state.width = COLS;
+    state.show_decoded = 0;
 }
 
 void ui_set_page(ui_page page) {
@@ -44,25 +44,27 @@ void file_selector() {
 }
 
 void draw_frequencies_tab() {
-    int width = (COLS / 3 - 2)/2;
+    int width = (COLS / 3 - 2) / 2;
     int height = LINES - 3;
     WINDOW *frequencies_tab = newwin(height, width, 1, 2 * COLS / 3 + 1);
-    WINDOW *expected_frequencies_tab = newwin(height, width, 1, 2 * COLS/ 3 +  (COLS / 3 - 2)/2 + 1);
+    WINDOW *expected_frequencies_tab = newwin(height, width, 1, 2 * COLS / 3 + (COLS / 3 - 2) / 2 + 1);
     double *frequencies = get_frequencies();
 
-    int indexes[ALPHABET_SIZE];
-    int expected_indexes[ALPHABET_SIZE];
-    int matches[ALPHABET_SIZE];
-    sort_indexes(frequencies, indexes);
-    sort_indexes(FREQUENCIES_RU, expected_indexes);
-    match_frequencies(frequencies, FREQUENCIES_RU, matches);
+    int *key = get_key_ptr();
 
     for (int i = 0; i < ALPHABET_SIZE; i++) {
-        mvwprintw(frequencies_tab, 1 + i, 2, "%C = %lf (%C)\n", ALPHABET_RU[indexes[i]], frequencies[indexes[i]], ALPHABET_RU[matches[indexes[i]]]);
+        mvwprintw(frequencies_tab, 1 + i, 2, "%C = %lf", ALPHABET_RU[state.indexes[i]], frequencies[state.indexes[i]]);
+        wchar_t suggested_letter = (key[state.indexes[i]] > -1) ? ALPHABET_RU[key[state.indexes[i]]] : L'?';
+        if (i == state.active_letter)
+            mvwprintw(frequencies_tab, 1 + i, 14, " [%C]\n", suggested_letter);
+        else
+            mvwprintw(frequencies_tab, 1 + i, 14, "  %C\n", suggested_letter);
     }
 
+
     for (int i = 0; i < ALPHABET_SIZE; i++) {
-        mvwprintw(expected_frequencies_tab, 1 + i, 2, "%C = %lf\n", ALPHABET_RU[expected_indexes[i]], FREQUENCIES_RU[expected_indexes[i]]);
+        mvwprintw(expected_frequencies_tab, 1 + i, 2, "%C = %lf\n", ALPHABET_RU[state.expected_indexes[i]],
+                  FREQUENCIES_RU[state.expected_indexes[i]]);
     }
 
     box(frequencies_tab, 0, 0);
@@ -81,16 +83,44 @@ void main_page() {
     WINDOW *top_window = newwin(LINES / 2, width, 1, 1);
     box(top_window, 0, 0);
     analysis_init();
-    measure_letters_frequency();
+    sort_indexes(get_frequencies(), state.indexes);
+    sort_indexes(FREQUENCIES_RU, state.expected_indexes);
+    int ch;
+    int *key = get_key_ptr();
     do {
-        wchar_t *source_string = get_source_string();
-        unsigned int l = wcslen(source_string);
+        if (ch) {
+            switch (ch) {
+                case KEY_DOWN:
+                case 'j':
+                    state.active_letter = absolute_index(state.active_letter + 1, ALPHABET_SIZE);
+                    break;
+                case KEY_UP:
+                case 'k':
+                    state.active_letter = absolute_index(state.active_letter - 1, ALPHABET_SIZE);
+                    break;
+                case '\t':
+                    state.show_decoded = !state.show_decoded;
+                    break;
+                case KEY_RIGHT:
+                case 'l':
+                    key[state.indexes[state.active_letter]] = absolute_index(key[state.indexes[state.active_letter]] + 1, ALPHABET_SIZE);
+                    break;
+                case KEY_LEFT:
+                case 'h':
+                    key[state.indexes[state.active_letter]] = absolute_index(key[state.indexes[state.active_letter]] - 1, ALPHABET_SIZE);
+                    break;
+            }
+        }
+        wchar_t *string = (state.show_decoded) ? apply_key() : get_source_string();
+        unsigned int l = wcslen(string);
         for (int i = 0; (i * (width - 5)) < l; i++)
-        mvwaddnwstr(top_window, 1+i, 2, source_string+i*(width-5), width - 5);
+            mvwaddnwstr(top_window, 1 + i, 2, string + i * (width - 5), width - 5);
+
+        mvwprintw(top_window, 0, 1, (state.show_decoded) ? "Decoded text" : "Source text");
         wrefresh(top_window);
         draw_frequencies_tab();
         refresh();
-    } while (getch() != 'q');
+    } while ((ch = getch()) != 'q');
     echo();
     quit();
 }
