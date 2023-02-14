@@ -194,21 +194,22 @@ void select_word() {
 void draw_analyse_word_tab() {
     draw_words_tab_frame();
     mvwprintw(words_tab, 0, WORDS_TAB_WIDTH/2 - (wcslen(state.word_to_analyse) + 2)/2, "[%S]", state.word_to_analyse);
+    state.matching_word_index = 0;
     do {
         wchar_t decoded_word[MAX_WORD_LENGTH] = L"";
         apply_key_to_str(state.word_to_analyse, decoded_word);
         wchar_t mask[ALPHABET_SIZE] = L"";
         generate_mask(decoded_word, mask);
-        mvwprintw(words_tab, 2, 2, "%S (%S)", decoded_word, mask);
+        mvwprintw(words_tab, 2, 2, "%S (%S), %d", decoded_word, mask, state.matching_word_index);
         mvwhline(words_tab, WORDS_TAB_HEIGHT/4 - 1, 1, 0, WORDS_TAB_WIDTH-2);
         int x = 2;
         int y = WORDS_TAB_HEIGHT/4 + 1;
         int word_count = 0;
 
+
         for (int i = 0; i < WORDLIST_LENGTH; i++) {
-            char *format = (i == state.matching_word_index) ? "[%S] " : " %S  ";
             if (!does_match_mask(FREQUENT_WORDS_RU[i], mask)) continue;
-            word_count++;
+            char *format = (word_count++ == state.matching_word_index) ? "[%S] " : " %S  ";
             mvwprintw(words_tab, y, x, format, FREQUENT_WORDS_RU[i]);
             x += wcslen(FREQUENT_WORDS_RU[i]) + 2;
             if (x + ((FREQUENT_WORDS_RU[i + 1]) ? wcslen(FREQUENT_WORDS_RU[i + 1]) : 0) >= (2 * COLS / 3) - 5) {
@@ -317,7 +318,7 @@ void draw_frequencies_tab() {
                   FREQUENCIES_RU[state.expected_indexes[i]]);
     }
 
-    box(frequencies_tab, '|', '_');
+    box(frequencies_tab, 0, 0);
     box(expected_frequencies_tab, 0, 0);
     mvwprintw(frequencies_tab, 0, 1, "Реальные частоты");
     mvwprintw(expected_frequencies_tab, 0, 1, "Ожидаемые частоты");
