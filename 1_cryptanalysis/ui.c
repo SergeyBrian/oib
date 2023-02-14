@@ -2,9 +2,10 @@
 
 static ui_state state;
 static const wchar_t letters_controls_text[] = L"[Tab] Режим просмотра текста  [↑]/[↓] Выбор буквы  "
-                                               "[←]/[→] Изменить выбранную букву  [BACKSPACE] Сбросить выбранную букву  "
-                                               "[W] Режим просмотра слов";
-static const wchar_t common_controls_text[] = L"[Q] Выйти";
+                                               "[←]/[→] Изменить выбранную букву  [BACKSPACE] Сбросить выбранную букву";
+static const wchar_t select_word_controls_text[] = L"[←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
+static const wchar_t analyse_word_controls_text[] = L"[BACKSPACE] Выбрать другое слово   [←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
+static const wchar_t common_controls_text[] = L"[W] Режим просмотра слов   [Q] Выйти";
 
 #define TEXT_TAB_WIDTH (2 * COLS / 3)
 
@@ -14,6 +15,9 @@ static const wchar_t common_controls_text[] = L"[Q] Выйти";
 #define FREQUENCIES_TAB_WIDTH ((COLS / 3 - 2) / 2)
 #define FREQUENCIES_TAB_HEIGHT (LINES - 6)
 
+void draw_frequencies_tab();
+
+void draw_words_tab_frame();
 
 WINDOW *frequencies_tab;
 WINDOW *expected_frequencies_tab;
@@ -29,6 +33,11 @@ void ui_init() {
     state.width = COLS;
     state.show_decoded = 0;
     state.word_view_mode = VIEW_BY_LETTERS_COUNT;
+    state.word_to_analyse_index = 0;
+    state.word_to_analyse = calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
+    state.word_analysis_mode = SELECT_WORD;
+    state.skip_input = 0;
+    state.matching_word_index = 0;
 
     text_tab = newwin(LINES / 2, TEXT_TAB_WIDTH, 1, 1);
     controls_tab = newwin(4, COLS - 3, LINES - 5, 1);
@@ -72,19 +81,32 @@ void file_selector() {
 }
 
 void draw_controls_tab() {
+    wclear(controls_tab);
     box(controls_tab, 0, 0);
     mvwprintw(controls_tab, 0, 1, "Управление");
-    mvwprintw(controls_tab, 2, 1, "%S  %S", letters_controls_text, common_controls_text);
+    const wchar_t *controls_text;
+    if (state.word_view_mode == WORD_ANALYSIS) {
+        switch (state.word_analysis_mode) {
+            case SELECT_WORD:
+                controls_text = select_word_controls_text;
+                break;
+            case ANALYSE_WORD:
+                controls_text = analyse_word_controls_text;
+                break;
+        }
+    } else {
+        controls_text = letters_controls_text;
+    }
+    mvwprintw(controls_tab, 2, 1, "%S  %S", controls_text, common_controls_text);
     wrefresh(controls_tab);
 }
 
 void draw_words_by_letters_count() {
-    wchar_t *words[MAX_WORDS] = {0};
-    wchar_t *to_free[MAX_WORDS] = {0};
-    sort_words_by_length((state.show_decoded) ? apply_key() : get_source_string(), words, to_free);
-
     int x = 2;
     int y = 2;
+
+    wchar_t **words = (state.show_decoded) ? get_decoded_words() : get_words();
+
     for (int i = 0; words[i] != NULL; i++) {
         mvwprintw(words_tab, y, x, "%S ", words[i]);
         x += wcslen(words[i]) + 1;
@@ -92,9 +114,6 @@ void draw_words_by_letters_count() {
             y++;
             x = 2;
         }
-    }
-    for (int i = 0; i < MAX_WORDS; i++) {
-        free(to_free[i]);
     }
     wrefresh(words_tab);
 }
@@ -120,7 +139,128 @@ void draw_words_by_decoded_letters_count() {
     wrefresh(words_tab);
 }
 
-void draw_words_tab() {
+void draw_word_selector() {
+    draw_words_tab_frame();
+    mvwprintw(words_tab, 0, WORDS_TAB_WIDTH / 2 - 7, " [Выбор слова]");
+
+    do {
+        wchar_t **words = get_words();
+
+        int x = 2;
+        int y = 2;
+        for (int i = 0; words[i] != NULL; i++) {
+            char *format = (i == state.word_to_analyse_index) ? "[%S] " : " %S  ";
+            mvwprintw(words_tab, y, x, format, words[i]);
+            x += wcslen(words[i]) + 2;
+            if (x + ((words[i + 1]) ? wcslen(words[i + 1]) : 0) >= (2 * COLS / 3) - 5) {
+                y++;
+                x = 2;
+            }
+        }
+        wrefresh(words_tab);
+
+        switch (getch()) {
+            case 'w':
+                state.word_view_mode = VIEW_BY_LETTERS_COUNT;
+                state.skip_input = 1;
+                break;
+            case 'q':
+                quit();
+                break;
+            case KEY_RIGHT:
+            case 'l':
+                state.word_to_analyse_index = absolute_index(state.word_to_analyse_index + 1, get_words_count());
+                break;
+            case KEY_LEFT:
+            case 'h':
+                state.word_to_analyse_index = absolute_index(state.word_to_analyse_index - 1, get_words_count());
+                break;
+            case '\n':
+                state.word_analysis_mode = ANALYSE_WORD;
+                wcscpy(state.word_to_analyse, words[state.word_to_analyse_index]);
+                break;
+        }
+    } while (state.word_view_mode == WORD_ANALYSIS && state.word_analysis_mode == SELECT_WORD);
+    state.skip_input = 1;
+}
+
+void select_word() {
+    draw_controls_tab();
+    state.active_letter = -1;
+    draw_frequencies_tab();
+    draw_word_selector();
+}
+
+void draw_analyse_word_tab() {
+    draw_words_tab_frame();
+    mvwprintw(words_tab, 0, WORDS_TAB_WIDTH/2 - (wcslen(state.word_to_analyse) + 2)/2, "[%S]", state.word_to_analyse);
+    do {
+        wchar_t decoded_word[MAX_WORD_LENGTH] = L"";
+        apply_key_to_str(state.word_to_analyse, decoded_word);
+        wchar_t mask[ALPHABET_SIZE] = L"";
+        generate_mask(decoded_word, mask);
+        mvwprintw(words_tab, 2, 2, "%S (%S)", decoded_word, mask);
+        mvwhline(words_tab, WORDS_TAB_HEIGHT/4 - 1, 1, 0, WORDS_TAB_WIDTH-2);
+        int x = 2;
+        int y = WORDS_TAB_HEIGHT/4 + 1;
+        int word_count = 0;
+
+        for (int i = 0; i < WORDLIST_LENGTH; i++) {
+            char *format = (i == state.matching_word_index) ? "[%S] " : " %S  ";
+            if (!does_match_mask(FREQUENT_WORDS_RU[i], mask)) continue;
+            word_count++;
+            mvwprintw(words_tab, y, x, format, FREQUENT_WORDS_RU[i]);
+            x += wcslen(FREQUENT_WORDS_RU[i]) + 2;
+            if (x + ((FREQUENT_WORDS_RU[i + 1]) ? wcslen(FREQUENT_WORDS_RU[i + 1]) : 0) >= (2 * COLS / 3) - 5) {
+                y++;
+                x = 2;
+            }
+        }
+        wrefresh(words_tab);
+        refresh();
+        switch (getch()) {
+            case 'w':
+                state.word_view_mode = VIEW_BY_LETTERS_COUNT;
+                break;
+            case 'q':
+                quit();
+                break;
+            case KEY_BACKSPACE:
+                state.word_analysis_mode = SELECT_WORD;
+                break;
+            case KEY_RIGHT:
+            case 'l':
+                state.matching_word_index = absolute_index(state.matching_word_index + 1, word_count);
+                break;
+            case KEY_LEFT:
+            case 'h':
+                state.matching_word_index = absolute_index(state.matching_word_index - 1, word_count);
+                break;
+        }
+    } while (state.word_view_mode == WORD_ANALYSIS && state.word_analysis_mode == ANALYSE_WORD);
+    state.skip_input = 1;
+}
+
+void analyse_word() {
+    draw_controls_tab();
+    draw_frequencies_tab();
+    draw_analyse_word_tab();
+}
+
+void word_analysis() {
+    do {
+        switch (state.word_analysis_mode) {
+            case SELECT_WORD:
+                select_word();
+                break;
+            case ANALYSE_WORD:
+                analyse_word();
+                break;
+        }
+    } while (state.word_view_mode == WORD_ANALYSIS);
+}
+
+void draw_words_tab_frame() {
     wclear(words_tab);
     box(words_tab, 0, 0);
     wchar_t *tab_label;
@@ -139,6 +279,10 @@ void draw_words_tab() {
               (state.word_view_mode == VIEW_BY_LETTERS_COUNT) ? ((state.show_decoded) ? L" (Расшифрованные)"
                                                                                       : L" (Исходные)")
                                                               : L"");
+}
+
+void draw_words_tab() {
+    draw_words_tab_frame();
     switch (state.word_view_mode) {
         case VIEW_BY_LETTERS_COUNT:
             draw_words_by_letters_count();
@@ -147,6 +291,7 @@ void draw_words_tab() {
             draw_words_by_decoded_letters_count();
             break;
         case WORD_ANALYSIS:
+            word_analysis();
             break;
     }
     wrefresh(words_tab);
@@ -191,7 +336,7 @@ void main_page() {
     do {
         wclear(text_tab);
         refresh();
-        if (ch) {
+        if (!state.skip_input && ch) {
             switch (ch) {
                 case KEY_DOWN:
                 case 'j':
@@ -224,6 +369,7 @@ void main_page() {
                     break;
             }
         }
+        state.skip_input = 0;
         wchar_t *string = (state.show_decoded) ? apply_key() : get_source_string();
         unsigned int l = wcslen(string);
         for (int i = 0; (i * (TEXT_TAB_WIDTH - 5)) < l; i++)
@@ -236,7 +382,7 @@ void main_page() {
         draw_words_tab();
         draw_controls_tab();
         refresh();
-    } while ((ch = getch()) != 'q');
+    } while (state.skip_input || ((ch = getch()) != 'q'));
     delwin(text_tab);
     echo();
     keypad(stdscr, false);

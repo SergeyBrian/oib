@@ -8,7 +8,7 @@ int open_file(char *filename) {
 }
 
 wchar_t *readfile() {
-    int size = 100000;
+    int size = MAX_TEXT_LENGTH;
 
     wchar_t *buff = (wchar_t *) malloc(sizeof(wchar_t) * size);
 

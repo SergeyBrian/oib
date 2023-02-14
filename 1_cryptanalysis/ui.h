@@ -20,6 +20,12 @@ typedef enum {
     UI_WORD_VIEW_MODE_ENUM_SIZE
 } ui_word_view_mode;
 
+typedef enum {
+    SELECT_WORD,
+    ANALYSE_WORD,
+    UI_WORD_ANALYSIS_MODE_ENUM_SIZE
+} ui_word_analysis_mode;
+
 
 typedef struct {
     ui_page current_page;
@@ -31,6 +37,11 @@ typedef struct {
     int indexes[ALPHABET_SIZE];
     int expected_indexes[ALPHABET_SIZE];
     ui_word_view_mode word_view_mode;
+    ui_word_analysis_mode word_analysis_mode;
+    int word_to_analyse_index;
+    wchar_t *word_to_analyse;
+    int skip_input;
+    int matching_word_index;
 } ui_state;
 
 void ui_init();

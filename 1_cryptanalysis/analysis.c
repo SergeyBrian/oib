@@ -1,6 +1,7 @@
 #include "analysis.h"
 
 static analysis_state state;
+static const wchar_t variable_symbols[10] = L"_@#$%^&*+=";
 
 void measure_letters_frequency() {
     unsigned int l = wcslen(state.string);
@@ -100,11 +101,27 @@ void analysis_init() {
 
     state.string = readfile();
     state.decoded_string = result;
+    state.words_count = 0;
 
 
     measure_letters_frequency();
     double *frequencies = get_frequencies();
     match_frequencies(frequencies, FREQUENCIES_RU, state.key);
+
+    state.words = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
+    for (int i = 0; i < MAX_WORDS; i++) {
+        state.words[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
+    }
+
+    state.decoded_words = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
+    for (int i = 0; i < MAX_WORDS; i++) {
+        state.decoded_words[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
+    }
+
+    sort_words_by_length(state.string, state.words, NULL);
+    for (int i = 0; state.words[i] != NULL; i++) {
+        state.words_count++;
+    }
 }
 
 wchar_t *get_source_string() {
@@ -145,3 +162,64 @@ void match_frequencies(const double freq1[], const double freq2[], int matches[]
     }
 }
 
+void generate_mask(wchar_t *string, wchar_t *mask) {
+    unsigned int l = wcslen(string);
+    wchar_t variables[ALPHABET_SIZE] = L"";
+
+    int variables_count = 0;
+
+    for (int i = 0; i < l; i++) {
+        if (iswlower(string[i])) {
+            mask[i] = string[i];
+            continue;
+        }
+        if (!variables[wchar_to_array_index(string[i])]) {
+            variables[wchar_to_array_index(string[i])] = variable_symbols[variables_count++];
+        }
+        mask[i] = variables[wchar_to_array_index(string[i])];
+    }
+}
+
+int does_match_mask(const wchar_t *string, const wchar_t *mask) {
+    unsigned int l = wcslen(string);
+    wchar_t variables[10] = L"";
+
+    if (l != wcslen(mask)) return 0;
+    for (int i = 0; i < l; i++) {
+        if (iswalpha(mask[i])) {
+            if (string[i] != mask[i]) return 0;
+            continue;
+        }
+        if (!variables[wchar_index(variable_symbols, mask[i])]) {
+            if (i == l - 1 && wchar_index(variables, string[i]) == -1) return 0;
+            variables[wchar_index(variable_symbols, mask[i])] = string[i];
+            continue;
+        }
+        if (variables[wchar_index(variable_symbols, mask[i])] != string[i]) return 0;
+    }
+    return 1;
+}
+
+void apply_key_to_str(const wchar_t *string, wchar_t *decoded_string) {
+    unsigned int l = wcslen(string);
+    for (int i = 0; i < l; i++) {
+        if (!iswalpha(string[i]) || state.key[wchar_to_array_index(string[i])] == -1) {
+            decoded_string[i] = string[i];
+            continue;
+        }
+        decoded_string[i] = LOWERCASE_ALPHABET_RU[state.key[wchar_to_array_index(string[i])]];
+    }
+}
+
+wchar_t **get_words() {
+    return state.words;
+}
+
+wchar_t **get_decoded_words() {
+    sort_words_by_length(state.decoded_string, state.decoded_words, NULL);
+    return state.decoded_words;
+}
+
+int get_words_count() {
+    return state.words_count;
+}

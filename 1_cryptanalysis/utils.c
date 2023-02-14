@@ -1,5 +1,4 @@
 #include "utils.h"
-#include "ui.h"
 
 
 void error_exit(const char *message) {
@@ -102,7 +101,7 @@ sort_words_by_function(const wchar_t *input_str, wchar_t *words[], wchar_t *to_f
         *p = L'\0';
         ++p;
         words[word_count] = (wchar_t *) malloc(sizeof(wchar_t) * (wcslen(start) + 1));
-        to_free[word_count] = words[word_count];
+        if (to_free != NULL) to_free[word_count] = words[word_count];
         wcscpy(words[word_count++], start);
     }
 
@@ -142,5 +141,50 @@ void sort_words_by_length(const wchar_t *input_str, wchar_t *words[], wchar_t *t
 
 void sort_words_by_decoded_letters(const wchar_t *input_str, wchar_t *words[], wchar_t *to_free[]) {
     sort_words_by_function(input_str, words, to_free, (unsigned long (*)(wchar_t *)) count_decoded_letters, true);
+}
+
+int count_word_occurrences(const wchar_t *input_str, const wchar_t *word) {
+    int count = 0;
+    const size_t word_len = wcslen(word);
+    for (const wchar_t *p = input_str; *p != L'\0'; p++) {
+        if (iswspace(*p)) {
+            continue;
+        }
+        if (towlower(*p) == towlower(*word)) {
+            const wchar_t *q = p + 1;
+            size_t i = 1;
+            while (i < word_len && *q != L'\0' && !iswspace(*q) && towlower(*q) == towlower(word[i])) {
+                i++;
+                q++;
+            }
+            if (i == word_len && (*q == L'\0' || iswspace(*q))) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+int wchar_index(const wchar_t *str, wchar_t ch) {
+    size_t len = wcslen(str);
+    size_t i;
+
+    for (i = 0; i < len; i++) {
+        if (str[i] == ch) {
+            return (int) i;
+        }
+    }
+
+    return -1;
+}
+
+int char_index(const char *str, char ch) {
+    char *ptr = strchr(str, ch);
+
+    if (ptr != NULL) {
+        return (int) (ptr - str);
+    } else {
+        return -1;
+    }
 }
 
