@@ -6,6 +6,8 @@ static const wchar_t letters_controls_text[] = L"[Tab] Режим просмот
                                                "[W] Режим просмотра слов";
 static const wchar_t common_controls_text[] = L"[Q] Выйти";
 
+#define TEXT_TAB_WIDTH (2 * COLS / 3)
+
 #define WORDS_TAB_HEIGHT ((LINES / 2) - 5)
 #define WORDS_TAB_WIDTH (2 * COLS / 3)
 
@@ -28,6 +30,7 @@ void ui_init() {
     state.show_decoded = 0;
     state.word_view_mode = VIEW_BY_LETTERS_COUNT;
 
+    text_tab = newwin(LINES / 2, TEXT_TAB_WIDTH, 1, 1);
     controls_tab = newwin(4, COLS - 3, LINES - 5, 1);
     words_tab = newwin(WORDS_TAB_HEIGHT, WORDS_TAB_WIDTH, 1 + LINES / 2, 1);
     frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1, 2 * COLS / 3 + 1);
@@ -156,15 +159,13 @@ void draw_frequencies_tab() {
 void main_page() {
     noecho();
     keypad(stdscr, true);
-    int width = 2 * COLS / 3;
-    WINDOW *top_window = newwin(LINES / 2, width, 1, 1);
     analysis_init();
     sort_indexes(get_frequencies(), state.indexes);
     sort_indexes(FREQUENCIES_RU, state.expected_indexes);
     wchar_t ch;
     int *key = get_key_ptr();
     do {
-        wclear(top_window);
+        wclear(text_tab);
         refresh();
         if (ch) {
             switch (ch) {
@@ -201,18 +202,18 @@ void main_page() {
         }
         wchar_t *string = (state.show_decoded) ? apply_key() : get_source_string();
         unsigned int l = wcslen(string);
-        for (int i = 0; (i * (width - 5)) < l; i++)
-            mvwaddnwstr(top_window, 1 + i, 2, string + i * (width - 5), width - 5);
+        for (int i = 0; (i * (TEXT_TAB_WIDTH - 5)) < l; i++)
+            mvwaddnwstr(text_tab, 1 + i, 2, string + i * (TEXT_TAB_WIDTH - 5), TEXT_TAB_WIDTH - 5);
 
-        box(top_window, 0, 0);
-        mvwprintw(top_window, 0, 1, (state.show_decoded) ? "Расшифрованный текст" : "Исходный текст");
-        wrefresh(top_window);
+        box(text_tab, 0, 0);
+        mvwprintw(text_tab, 0, 1, (state.show_decoded) ? "Расшифрованный текст" : "Исходный текст");
+        wrefresh(text_tab);
         draw_frequencies_tab();
         draw_words_tab();
         draw_controls_tab();
         refresh();
     } while ((ch = getch()) != 'q');
-    delwin(top_window);
+    delwin(text_tab);
     echo();
     keypad(stdscr, false);
     quit();
