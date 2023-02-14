@@ -330,9 +330,10 @@ void draw_frequencies_tab() {
         mvwprintw(frequencies_tab, 1 + i, 2, "%C = %lf", ALPHABET_RU[state.indexes[i]], frequencies[state.indexes[i]]);
         wchar_t suggested_letter = (key[state.indexes[i]] > -1) ? ALPHABET_RU[key[state.indexes[i]]] : L'?';
         if (i == state.active_letter)
-            mvwprintw(frequencies_tab, 1 + i, 14, " [%C]\n", suggested_letter);
+            mvwprintw(frequencies_tab, 1 + i, 14, " [%C]", suggested_letter);
         else
-            mvwprintw(frequencies_tab, 1 + i, 14, "  %C\n", suggested_letter);
+            mvwprintw(frequencies_tab, 1 + i, 14, "  %C ", suggested_letter);
+        if (key[state.indexes[i]] != -1 && !IS_UNIQUE(key, ALPHABET_SIZE, key[state.indexes[i]])) wprintw(frequencies_tab, " !");
     }
 
 

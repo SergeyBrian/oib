@@ -11,6 +11,17 @@
 
 #define MAX_WORDS 500
 
+#define IS_UNIQUE(ARR, LEN, ELEMENT) \
+    ({ \
+        int UNIQUE_COUNT = 0; \
+        for (int I = 0; I < LEN; I++) { \
+            if ((ARR)[I] == (ELEMENT)) { \
+                UNIQUE_COUNT++; \
+            } \
+        } \
+        UNIQUE_COUNT == 1; \
+    })
+
 int wchar_to_array_index(wchar_t c);
 int absolute_index(int i, int array_size);
 void error_exit(const char *message);
