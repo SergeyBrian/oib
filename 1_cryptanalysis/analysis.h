@@ -28,7 +28,7 @@ typedef struct {
 
 
 void measure_letters_frequency();
-void find_most_frequent_ngram(const wchar_t *string, int n, wchar_t *result);
+void find_most_frequent_ngram(int n, wchar_t *result);
 wchar_t *apply_key();
 void generate_key(wchar_t *method, wchar_t key[ALPHABET_SIZE][2]);
 void analysis_init();

@@ -20,16 +20,16 @@ void measure_letters_frequency() {
     }
 }
 
-void find_most_frequent_ngram(const wchar_t *string, int n, wchar_t *result) {
-    unsigned int l = wcslen(string);
+void find_most_frequent_ngram(int n, wchar_t *result) {
+    unsigned int l = wcslen(state.string);
     ngram *ngrams[1000] = {0};
     int ngrams_count = 0;
 
     for (int i = 0; i < l - n; i++) {
         wchar_t *current_ngram = (wchar_t *) malloc(sizeof(wchar_t) * (n + 1));
         for (int j = 0; j < n; j++) {
-            if (string[i + j] == L' ') continue;
-            current_ngram[j] = string[i + j];
+            if (state.string[i + j] == L' ') continue;
+            current_ngram[j] = state.string[i + j];
         }
         current_ngram[n] = 0;
 

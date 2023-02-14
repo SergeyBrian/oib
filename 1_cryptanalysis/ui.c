@@ -1,6 +1,8 @@
 #include "ui.h"
 
 static ui_state state;
+static const wchar_t letters_controls_text[] = L"[Tab] Переключить режим просмотра текста\t[↑]/[↓] Выбор буквы\t[←]/[→] Изменить выбранную букву";
+static const wchar_t common_controls_text[] = L"[Q] Выйти";
 
 void ui_init() {
     initscr();
@@ -43,9 +45,28 @@ void file_selector() {
     }
 }
 
+void draw_controls_tab() {
+    int width = COLS - 3;
+    int height = 4;
+    WINDOW *controls = newwin(height, width, LINES - 5, 1);
+    box(controls, 0, 0);
+    mvwprintw(controls, 0, 1, "Управление");
+    mvwprintw(controls, 2, 1, "%S\t%S", letters_controls_text, common_controls_text);
+    wrefresh(controls);
+}
+
+void draw_words_tab() {
+    int width = 2 * COLS / 3;
+    int height = (LINES / 2) - 5;
+    WINDOW *words_tab = newwin(height, width, 1 + LINES / 2, 1);
+    box(words_tab, 0, 0);
+    mvwprintw(words_tab, 0, 1, "Слова");
+    wrefresh(words_tab);
+}
+
 void draw_frequencies_tab() {
     int width = (COLS / 3 - 2) / 2;
-    int height = LINES - 3;
+    int height = LINES - 6;
     WINDOW *frequencies_tab = newwin(height, width, 1, 2 * COLS / 3 + 1);
     WINDOW *expected_frequencies_tab = newwin(height, width, 1, 2 * COLS / 3 + (COLS / 3 - 2) / 2 + 1);
     double *frequencies = get_frequencies();
@@ -69,20 +90,21 @@ void draw_frequencies_tab() {
 
     box(frequencies_tab, 0, 0);
     box(expected_frequencies_tab, 0, 0);
-    mvwprintw(frequencies_tab, 0, 1, "Frequencies table");
-    mvwprintw(expected_frequencies_tab, 0, 1, "Expected frequencies");
+    mvwprintw(frequencies_tab, 0, 1, "Реальные частоты");
+    mvwprintw(expected_frequencies_tab, 0, 1, "Ожидаемые частоты");
     wrefresh(frequencies_tab);
     wrefresh(expected_frequencies_tab);
 }
 
 void main_page() {
     noecho();
+    keypad(stdscr, true);
     int width = 2 * COLS / 3;
     WINDOW *top_window = newwin(LINES / 2, width, 1, 1);
     analysis_init();
     sort_indexes(get_frequencies(), state.indexes);
     sort_indexes(FREQUENCIES_RU, state.expected_indexes);
-    int ch;
+    wchar_t ch;
     int *key = get_key_ptr();
     do {
         wclear(top_window);
@@ -116,9 +138,11 @@ void main_page() {
             mvwaddnwstr(top_window, 1 + i, 2, string + i * (width - 5), width - 5);
 
         box(top_window, 0, 0);
-        mvwprintw(top_window, 0, 1, (state.show_decoded) ? "Decoded text" : "Source text");
+        mvwprintw(top_window, 0, 1, (state.show_decoded) ? "Расшифрованный текст" : "Исходный текст");
         wrefresh(top_window);
         draw_frequencies_tab();
+        draw_words_tab();
+        draw_controls_tab();
         refresh();
     } while ((ch = getch()) != 'q');
     echo();
