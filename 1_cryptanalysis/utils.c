@@ -29,7 +29,7 @@ void quit() {
 }
 
 int wchar_to_array_index(wchar_t c) {
-    return (int) (c) - FIRST_ALPHABET_LETTER_WCHAR_VALUE;
+    return (int) (towlower(c)) - FIRST_ALPHABET_LETTER_WCHAR_VALUE;
 }
 
 int absolute_index(int i, int array_size) {

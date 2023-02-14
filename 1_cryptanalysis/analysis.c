@@ -12,7 +12,7 @@ void measure_letters_frequency() {
             continue;
         }
 
-        state.frequencies[wchar_to_array_index(state.string[i])]++;
+        state.frequencies[wchar_to_array_index(towlower(state.string[i]))]++;
         letters_count++;
     }
 
@@ -229,4 +229,13 @@ wchar_t **get_decoded_words() {
 
 int get_words_count() {
     return state.words_count;
+}
+
+void generate_key_from_matches(const wchar_t *encoded, const wchar_t *decoded) {
+    unsigned int l = wcslen(encoded);
+    for (int i = 0; i < l; i++) {
+        int a = wchar_to_array_index(towlower(encoded[i]));
+        int b = wchar_to_array_index(decoded[i]);
+        state.key[a] = b;
+    }
 }
