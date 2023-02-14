@@ -191,8 +191,15 @@ int does_match_mask(const wchar_t *string, const wchar_t *mask) {
             continue;
         }
         if (!variables[wchar_index(variable_symbols, mask[i])]) {
-            if (i == l - 1 && wchar_index(variables, string[i]) == -1) return 0;
+//            if (i == l - 1 && wchar_index(variables, string[i]) == -1) return 0;
             variables[wchar_index(variable_symbols, mask[i])] = string[i];
+            int c = 0;
+            for (int j = 0; j < 10; j++) {
+                if (variables[j] == string[i]) {
+                    c++;
+                    if (c > 1) return 0;
+                }
+            }
             continue;
         }
         if (variables[wchar_index(variable_symbols, mask[i])] != string[i]) return 0;

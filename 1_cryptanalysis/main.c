@@ -40,10 +40,6 @@ int main(int argc, char **argv) {
     setlocale(LC_ALL, "ru_RU.UTF-8");
     ui_init();
     ui_set_page(FILE_SELECTOR);
-    wchar_t mask[] = L"_но";
-    wchar_t s[] = L"оно";
-    int n = does_match_mask(s, mask);
-
     char *params[20] = {0};
 
     if (argc > 1) {

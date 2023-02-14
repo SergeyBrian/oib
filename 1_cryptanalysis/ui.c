@@ -317,7 +317,7 @@ void draw_frequencies_tab() {
                   FREQUENCIES_RU[state.expected_indexes[i]]);
     }
 
-    box(frequencies_tab, 0, 0);
+    box(frequencies_tab, '|', '_');
     box(expected_frequencies_tab, 0, 0);
     mvwprintw(frequencies_tab, 0, 1, "Реальные частоты");
     mvwprintw(expected_frequencies_tab, 0, 1, "Ожидаемые частоты");
