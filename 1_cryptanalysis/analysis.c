@@ -108,6 +108,10 @@ wchar_t *get_source_string() {
     return state.string;
 }
 
+wchar_t *get_decoded_string() {
+    return state.decoded_string;
+}
+
 double *get_frequencies() {
     return state.frequencies;
 }

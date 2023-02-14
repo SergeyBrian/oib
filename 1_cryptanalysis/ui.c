@@ -1,7 +1,9 @@
 #include "ui.h"
 
 static ui_state state;
-static const wchar_t letters_controls_text[] = L"[Tab] Переключить режим просмотра текста\t[↑]/[↓] Выбор буквы\t[←]/[→] Изменить выбранную букву";
+static const wchar_t letters_controls_text[] = L"[Tab] Режим просмотра текста  [↑]/[↓] Выбор буквы  "
+                                               "[←]/[→] Изменить выбранную букву  [BACKSPACE] Сбросить выбранную букву  "
+                                               "[W] Режим просмотра слов";
 static const wchar_t common_controls_text[] = L"[Q] Выйти";
 
 void ui_init() {
@@ -10,6 +12,7 @@ void ui_init() {
     state.height = LINES;
     state.width = COLS;
     state.show_decoded = 0;
+    state.word_view_mode = VIEW_BY_LETTERS_COUNT;
 }
 
 void ui_set_page(ui_page page) {
@@ -51,8 +54,23 @@ void draw_controls_tab() {
     WINDOW *controls = newwin(height, width, LINES - 5, 1);
     box(controls, 0, 0);
     mvwprintw(controls, 0, 1, "Управление");
-    mvwprintw(controls, 2, 1, "%S\t%S", letters_controls_text, common_controls_text);
+    mvwprintw(controls, 2, 1, "%S  %S", letters_controls_text, common_controls_text);
     wrefresh(controls);
+}
+
+void draw_words_by_letters_count(WINDOW *words_tab) {
+    wchar_t **words = sort_words_by_length((state.show_decoded) ? get_decoded_string() : get_source_string());
+    unsigned int x = 2;
+    unsigned int y = 2;
+    for (int i = 0; words[i] != NULL; i++) {
+        mvwprintw(words_tab, y, x, "%S ", words[i]);
+        x += wcslen(words[i]) + 1;
+        if (x + ((words[i + 1]) ? wcslen(words[i + 1]) : 0) >= (2 * COLS / 3) - 5) {
+            y++;
+            x = 2;
+        }
+    }
+    wrefresh(words_tab);
 }
 
 void draw_words_tab() {
@@ -60,8 +78,17 @@ void draw_words_tab() {
     int height = (LINES / 2) - 5;
     WINDOW *words_tab = newwin(height, width, 1 + LINES / 2, 1);
     box(words_tab, 0, 0);
-    mvwprintw(words_tab, 0, 1, "Слова");
+    mvwprintw(words_tab, 0, 1, "Слова %S %S", (state.word_view_mode == VIEW_BY_LETTERS_COUNT) ? L"по количеству букв"
+                                                                                              : L"по количеству расшифрованных букв",
+              (state.show_decoded) ? L"(Расшифрованные)" : L"(Исходные)");
     wrefresh(words_tab);
+    switch (state.word_view_mode) {
+        case VIEW_BY_LETTERS_COUNT:
+            draw_words_by_letters_count(words_tab);
+            break;
+        case VIEW_BY_DECODED_LETTERS_COUNT:
+            break;
+    }
 }
 
 void draw_frequencies_tab() {
@@ -124,11 +151,21 @@ void main_page() {
                     break;
                 case KEY_RIGHT:
                 case 'l':
-                    key[state.indexes[state.active_letter]] = absolute_index(key[state.indexes[state.active_letter]] + 1, ALPHABET_SIZE);
+                    key[state.indexes[state.active_letter]] = (key[state.indexes[state.active_letter]] == -1)
+                                                              ? state.indexes[state.active_letter] : absolute_index(
+                                    key[state.indexes[state.active_letter]] + 1, ALPHABET_SIZE);
                     break;
                 case KEY_LEFT:
                 case 'h':
-                    key[state.indexes[state.active_letter]] = absolute_index(key[state.indexes[state.active_letter]] - 1, ALPHABET_SIZE);
+                    key[state.indexes[state.active_letter]] = (key[state.indexes[state.active_letter]] == -1)
+                                                              ? state.indexes[state.active_letter] : absolute_index(
+                                    key[state.indexes[state.active_letter]] - 1, ALPHABET_SIZE);
+                    break;
+                case KEY_BACKSPACE:
+                    key[state.indexes[state.active_letter]] = -1;
+                    break;
+                case 'w':
+                    state.word_view_mode = !state.word_view_mode;
                     break;
             }
         }
@@ -146,6 +183,7 @@ void main_page() {
         refresh();
     } while ((ch = getch()) != 'q');
     echo();
+    keypad(stdscr, false);
     quit();
 }
 

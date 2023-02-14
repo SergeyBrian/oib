@@ -12,6 +12,11 @@ typedef enum {
     MAIN_PAGE
 } ui_page;
 
+typedef enum {
+    VIEW_BY_LETTERS_COUNT,
+    VIEW_BY_DECODED_LETTERS_COUNT
+} ui_word_view_mode;
+
 
 typedef struct {
     ui_page current_page;
@@ -22,6 +27,7 @@ typedef struct {
     int show_decoded;
     int indexes[ALPHABET_SIZE];
     int expected_indexes[ALPHABET_SIZE];
+    ui_word_view_mode word_view_mode;
 } ui_state;
 
 void ui_init();

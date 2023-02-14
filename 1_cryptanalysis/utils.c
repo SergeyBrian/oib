@@ -63,3 +63,63 @@ void sort_indexes(const double arr[], int *indexes) {
         }
     }
 }
+
+wchar_t** sort_words_by_length(const wchar_t* input_str) {
+    wchar_t* str_copy = wcsdup(input_str);
+    wchar_t** words = calloc(MAX_WORDS, sizeof(wchar_t*));
+    wchar_t* p = str_copy;
+    int word_count = 0;
+
+    unsigned int l = wcslen(str_copy);
+    for (int i = 0; i < l; i++) {
+        if (iswalpha(str_copy[i])) continue;
+        str_copy[i] = L' ';
+    }
+
+    while (*p != L'\0' && word_count < MAX_WORDS) {
+        while (iswspace(*p)) {
+            ++p;
+        }
+        if (*p == L'\0') {
+            break;
+        }
+        wchar_t* start = p;
+        while (*p != L'\0' && !iswspace(*p)) {
+            ++p;
+        }
+        *p = L'\0';
+        ++p;
+        words[word_count] = (wchar_t *) malloc(sizeof(wchar_t) * (wcslen(start) + 1));
+        wcscpy(words[word_count++], start);
+    }
+
+    for (int i = 0; i < word_count - 1; ++i) {
+        for (int j = i + 1; j < word_count; ++j) {
+            if (wcslen(words[i]) > wcslen(words[j])) {
+                wchar_t* temp = words[i];
+                words[i] = words[j];
+                words[j] = temp;
+            }
+        }
+    }
+
+    int unique_count = 0;
+    for (int i = 0; i < word_count; ++i) {
+        int is_duplicate = 0;
+        for (int j = 0; j < unique_count; ++j) {
+            if (wcscmp(words[i], words[j]) == 0) {
+                is_duplicate = 1;
+                break;
+            }
+        }
+        if (!is_duplicate) {
+            words[unique_count++] = words[i];
+        }
+    }
+
+
+    words[unique_count] = NULL;
+    free(str_copy);
+    return words;
+}
+

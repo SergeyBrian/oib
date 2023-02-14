@@ -33,6 +33,7 @@ wchar_t *apply_key();
 void generate_key(wchar_t *method, wchar_t key[ALPHABET_SIZE][2]);
 void analysis_init();
 wchar_t *get_source_string();
+wchar_t *get_decoded_string();
 double *get_frequencies();
 void match_frequencies(const double freq1[], const double freq2[], int matches[]);
 int *get_key_ptr();
