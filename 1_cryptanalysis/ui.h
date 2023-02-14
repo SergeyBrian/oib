@@ -9,12 +9,15 @@
 
 typedef enum {
     FILE_SELECTOR,
-    MAIN_PAGE
+    MAIN_PAGE,
+    UI_PAGE_ENUM_SIZE
 } ui_page;
 
 typedef enum {
     VIEW_BY_LETTERS_COUNT,
-    VIEW_BY_DECODED_LETTERS_COUNT
+    VIEW_BY_DECODED_LETTERS_COUNT,
+    WORD_ANALYSIS,
+    UI_WORD_VIEW_MODE_ENUM_SIZE
 } ui_word_view_mode;
 
 

@@ -64,9 +64,8 @@ void sort_indexes(const double arr[], int *indexes) {
     }
 }
 
-wchar_t** sort_words_by_length(const wchar_t* input_str) {
+void sort_words_by_length(const wchar_t* input_str, wchar_t *words[], wchar_t *words_ptr[]) {
     wchar_t* str_copy = wcsdup(input_str);
-    wchar_t** words = calloc(MAX_WORDS, sizeof(wchar_t*));
     wchar_t* p = str_copy;
     int word_count = 0;
 
@@ -90,6 +89,7 @@ wchar_t** sort_words_by_length(const wchar_t* input_str) {
         *p = L'\0';
         ++p;
         words[word_count] = (wchar_t *) malloc(sizeof(wchar_t) * (wcslen(start) + 1));
+        words_ptr[word_count] = words[word_count];
         wcscpy(words[word_count++], start);
     }
 
@@ -119,7 +119,7 @@ wchar_t** sort_words_by_length(const wchar_t* input_str) {
 
 
     words[unique_count] = NULL;
+
     free(str_copy);
-    return words;
 }
 

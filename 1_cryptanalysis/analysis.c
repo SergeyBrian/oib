@@ -92,6 +92,9 @@ int *get_key_ptr() {
 
 void analysis_init() {
     int size = 100000;
+    if (state.ready) return;
+
+    state.ready = 1;
 
     wchar_t *result = (wchar_t *) malloc(sizeof(wchar_t) * size);
 

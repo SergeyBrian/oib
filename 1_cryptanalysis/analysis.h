@@ -8,12 +8,6 @@
 #include "fs.h"
 #include "utils.h"
 
-typedef enum {
-    BEGIN = 1,
-    MIDDLE = 2,
-    END = 3
-} letter_position;
-
 typedef struct {
     wchar_t *string;
     int count;
@@ -24,6 +18,7 @@ typedef struct {
     wchar_t *decoded_string;
     double frequencies[ALPHABET_SIZE];
     int key[ALPHABET_SIZE];
+    int ready;
 } analysis_state;
 
 

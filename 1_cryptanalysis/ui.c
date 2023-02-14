@@ -6,6 +6,20 @@ static const wchar_t letters_controls_text[] = L"[Tab] Режим просмот
                                                "[W] Режим просмотра слов";
 static const wchar_t common_controls_text[] = L"[Q] Выйти";
 
+#define WORDS_TAB_HEIGHT ((LINES / 2) - 5)
+#define WORDS_TAB_WIDTH (2 * COLS / 3)
+
+#define FREQUENCIES_TAB_WIDTH ((COLS / 3 - 2) / 2)
+#define FREQUENCIES_TAB_HEIGHT (LINES - 6)
+
+
+WINDOW *frequencies_tab;
+WINDOW *expected_frequencies_tab;
+WINDOW *words_tab;
+WINDOW *text_tab;
+WINDOW *controls_tab;
+WINDOW *file_window;
+
 void ui_init() {
     initscr();
     echo();
@@ -13,6 +27,11 @@ void ui_init() {
     state.width = COLS;
     state.show_decoded = 0;
     state.word_view_mode = VIEW_BY_LETTERS_COUNT;
+
+    controls_tab = newwin(4, COLS - 3, LINES - 5, 1);
+    words_tab = newwin(WORDS_TAB_HEIGHT, WORDS_TAB_WIDTH, 1 + LINES / 2, 1);
+    frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1, 2 * COLS / 3 + 1);
+    expected_frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1, 2 * COLS / 3 + (COLS / 3 - 2) / 2 + 1);
 }
 
 void ui_set_page(ui_page page) {
@@ -23,19 +42,18 @@ int show_file_open_error = 0;
 
 void file_selector() {
     while (!state.is_input_file_open) {
-        WINDOW *local_win;
-        local_win = newwin(LINES / 2, COLS / 2, LINES / 4, COLS / 4);
-        box(local_win, 0, 0);
+        file_window = newwin(LINES / 2, COLS / 2, LINES / 4, COLS / 4);
+        box(file_window, 0, 0);
 
         if (show_file_open_error) {
-            mvwprintw(local_win, 0, 2, "Can't open file!");
+            mvwprintw(file_window, 0, 2, "Can't open file!");
         }
 
 
-        mvwprintw(local_win, 1, 2, "Enter input file name: ");
-        wrefresh(local_win);
+        mvwprintw(file_window, 1, 2, "Enter input file name: ");
+        wrefresh(file_window);
         char filename[1000];
-        wscanw(local_win, "%s", filename);
+        wscanw(file_window, "%s", filename);
 
         if (open_file(filename)) {
             state.current_page = MAIN_PAGE;
@@ -46,22 +64,23 @@ void file_selector() {
 
         show_file_open_error = 1;
     }
+    delwin(file_window);
 }
 
 void draw_controls_tab() {
-    int width = COLS - 3;
-    int height = 4;
-    WINDOW *controls = newwin(height, width, LINES - 5, 1);
-    box(controls, 0, 0);
-    mvwprintw(controls, 0, 1, "Управление");
-    mvwprintw(controls, 2, 1, "%S  %S", letters_controls_text, common_controls_text);
-    wrefresh(controls);
+    box(controls_tab, 0, 0);
+    mvwprintw(controls_tab, 0, 1, "Управление");
+    mvwprintw(controls_tab, 2, 1, "%S  %S", letters_controls_text, common_controls_text);
+    wrefresh(controls_tab);
 }
 
-void draw_words_by_letters_count(WINDOW *words_tab) {
-    wchar_t **words = sort_words_by_length((state.show_decoded) ? get_decoded_string() : get_source_string());
-    unsigned int x = 2;
-    unsigned int y = 2;
+void draw_words_by_letters_count() {
+    wchar_t *words[MAX_WORDS] = {0};
+    wchar_t *to_free[MAX_WORDS] = {0};
+    sort_words_by_length((state.show_decoded) ? get_decoded_string() : get_source_string(), words, to_free);
+
+    int x = 2;
+    int y = 2;
     for (int i = 0; words[i] != NULL; i++) {
         mvwprintw(words_tab, y, x, "%S ", words[i]);
         x += wcslen(words[i]) + 1;
@@ -70,32 +89,43 @@ void draw_words_by_letters_count(WINDOW *words_tab) {
             x = 2;
         }
     }
+    for (int i = 0; i < MAX_WORDS; i++) {
+        free(to_free[i]);
+    }
     wrefresh(words_tab);
 }
 
+
 void draw_words_tab() {
-    int width = 2 * COLS / 3;
-    int height = (LINES / 2) - 5;
-    WINDOW *words_tab = newwin(height, width, 1 + LINES / 2, 1);
     box(words_tab, 0, 0);
-    mvwprintw(words_tab, 0, 1, "Слова %S %S", (state.word_view_mode == VIEW_BY_LETTERS_COUNT) ? L"по количеству букв"
-                                                                                              : L"по количеству расшифрованных букв",
-              (state.show_decoded) ? L"(Расшифрованные)" : L"(Исходные)");
+    wchar_t *tab_label;
+    switch (state.word_view_mode) {
+        case VIEW_BY_LETTERS_COUNT:
+            tab_label = L"Слова по количеству букв";
+            break;
+        case VIEW_BY_DECODED_LETTERS_COUNT:
+            tab_label = L"Слова по количеству расшифрованных букв";
+            break;
+        case WORD_ANALYSIS:
+            tab_label = L"Анализ слова";
+            break;
+    }
+    mvwprintw(words_tab, 0, 1, "%S%S", tab_label,
+              (state.word_view_mode != WORD_ANALYSIS) ? ((state.show_decoded) ? L" (Расшифрованные)" : L" (Исходные)")
+                                                      : L"");
     wrefresh(words_tab);
     switch (state.word_view_mode) {
         case VIEW_BY_LETTERS_COUNT:
-            draw_words_by_letters_count(words_tab);
+            draw_words_by_letters_count();
             break;
         case VIEW_BY_DECODED_LETTERS_COUNT:
+            break;
+        case WORD_ANALYSIS:
             break;
     }
 }
 
 void draw_frequencies_tab() {
-    int width = (COLS / 3 - 2) / 2;
-    int height = LINES - 6;
-    WINDOW *frequencies_tab = newwin(height, width, 1, 2 * COLS / 3 + 1);
-    WINDOW *expected_frequencies_tab = newwin(height, width, 1, 2 * COLS / 3 + (COLS / 3 - 2) / 2 + 1);
     double *frequencies = get_frequencies();
 
     int *key = get_key_ptr();
@@ -165,7 +195,7 @@ void main_page() {
                     key[state.indexes[state.active_letter]] = -1;
                     break;
                 case 'w':
-                    state.word_view_mode = !state.word_view_mode;
+                    state.word_view_mode = absolute_index(state.word_view_mode + 1, UI_WORD_VIEW_MODE_ENUM_SIZE);
                     break;
             }
         }
@@ -182,6 +212,7 @@ void main_page() {
         draw_controls_tab();
         refresh();
     } while ((ch = getch()) != 'q');
+    delwin(top_window);
     echo();
     keypad(stdscr, false);
     quit();
@@ -207,5 +238,9 @@ void ui_update() {
 }
 
 void ui_quit() {
+    delwin(frequencies_tab);
+    delwin(expected_frequencies_tab);
+    delwin(words_tab);
+    delwin(controls_tab);
     endwin();
 }
