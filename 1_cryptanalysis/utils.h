@@ -9,7 +9,6 @@
 #include "data.h"
 #include "ui.h"
 
-#define MAX_WORDS 500
 
 #define IS_UNIQUE(ARR, LEN, ELEMENT) \
     ({ \

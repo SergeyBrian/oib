@@ -42,6 +42,8 @@ typedef struct {
     wchar_t *word_to_analyse;
     int skip_input;
     int matching_word_index;
+    wchar_t custom_match_words[MAX_WORD_LENGTH][MAX_WORDS];
+    int custom_match_words_count;
 } ui_state;
 
 void ui_init();

@@ -4,7 +4,7 @@ static ui_state state;
 static const wchar_t letters_controls_text[] = L"[Tab] Режим просмотра текста  [↑]/[↓] Выбор буквы  "
                                                "[←]/[→] Изменить выбранную букву  [BACKSPACE] Сбросить выбранную букву";
 static const wchar_t select_word_controls_text[] = L"[←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
-static const wchar_t analyse_word_controls_text[] = L"[BACKSPACE] Выбрать другое слово   [←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
+static const wchar_t analyse_word_controls_text[] = L"[BACKSPACE] Выбрать другое слово   [SPACE] Ввести свое слово   [←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
 static const wchar_t common_controls_text[] = L"[W] Режим просмотра слов   [Q] Выйти";
 
 #define TEXT_TAB_HEIGHT (LINES / 2)
@@ -26,6 +26,7 @@ WINDOW *words_tab;
 WINDOW *text_tab;
 WINDOW *controls_tab;
 WINDOW *file_window;
+WINDOW *custom_match_window;
 
 void ui_init() {
     initscr();
@@ -39,6 +40,7 @@ void ui_init() {
     state.word_analysis_mode = SELECT_WORD;
     state.skip_input = 0;
     state.matching_word_index = 0;
+    state.custom_match_words_count = 0;
 
     text_tab = newwin(TEXT_TAB_HEIGHT, TEXT_TAB_WIDTH, 1, 1);
     controls_tab = newwin(4, COLS - 3, LINES - 5, 1);
@@ -46,6 +48,7 @@ void ui_init() {
     frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1, 2 * COLS / 3 + 1);
     expected_frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1,
                                       2 * COLS / 3 + (COLS / 3 - 2) / 2 + 1);
+    custom_match_window = newwin(WORDS_TAB_HEIGHT, WORDS_TAB_WIDTH, 1 + LINES / 2, 1);
 }
 
 void ui_set_page(ui_page page) {
@@ -100,14 +103,15 @@ void draw_text_tab() {
             win_y++;
             win_x = 2;
         } else {
-            if ((str_pos + 1) && (win_x + first_word_len((str_pos+1)) >= max_length)) {
+            if ((str_pos + 1) && (win_x + first_word_len((str_pos + 1)) >= max_length)) {
                 str_pos++;
                 win_y++;
                 win_x = 2;
             }
 
             // Check if the current position matches the word
-            if (state.word_view_mode == WORD_ANALYSIS && word_length > 0 && (is_first_letter || iswspace(*(str_pos - 1))) &&
+            if (state.word_view_mode == WORD_ANALYSIS && word_length > 0 &&
+                (is_first_letter || iswspace(*(str_pos - 1))) &&
                 wcsncmp(str_pos, word, word_length) == 0
                 && (iswspace(*(str_pos + word_length)) || *(str_pos + word_length) == L'\0' ||
                     iswpunct(*(str_pos + word_length)))) {
@@ -158,6 +162,8 @@ void draw_controls_tab() {
 }
 
 void draw_words_by_letters_count() {
+    wclear(words_tab);
+    draw_words_tab_frame();
     int x = 2;
     int y = 2;
 
@@ -175,6 +181,8 @@ void draw_words_by_letters_count() {
 }
 
 void draw_words_by_decoded_letters_count() {
+    wclear(words_tab);
+    draw_words_tab_frame();
     wchar_t *words[MAX_WORDS] = {0};
     wchar_t *to_free[MAX_WORDS] = {0};
     sort_words_by_decoded_letters(apply_key(), words, to_free);
@@ -196,7 +204,8 @@ void draw_words_by_decoded_letters_count() {
 }
 
 void draw_word_selector() {
-
+    wclear(words_tab);
+    draw_words_tab_frame();
     do {
         draw_words_tab_frame();
         wchar_t **words = get_decoded_words();
@@ -250,14 +259,67 @@ void select_word() {
     draw_word_selector();
 }
 
+void custom_match_input_window() {
+    echo();
+    curs_set(1);
+    wchar_t message[] = L"Введите слово: ";
+    wchar_t error_message[] = L"Длины слов не совпадают!";
+    wchar_t mask_error_message[] = L"Введенное слово не совпадает с маской!   [ENTER] Подтвердить   [BACKSPACE] Ввести заново";
+
+    wchar_t decoded_word[MAX_WORD_LENGTH] = L"";
+    apply_key_to_str(state.word_to_analyse, decoded_word);
+
+    wchar_t mask[MAX_WORD_LENGTH] = L"";
+    generate_mask(decoded_word, mask);
+
+    wchar_t custom_match[MAX_WORD_LENGTH] = L"";
+
+    do {
+        wclear(custom_match_window);
+        box(custom_match_window, 0, 0);
+        mvwprintw(custom_match_window, 0, 1, "Добавление своего слова");
+        mvwprintw(custom_match_window, 2, 1, "Исходное слово:       %S", state.word_to_analyse);
+        mvwprintw(custom_match_window, 3, 1, "Расшифрованное слово: %S", decoded_word);
+        mvwprintw(custom_match_window, 4, 1, "Маска слова:          %S", mask);
+        mvwprintw(custom_match_window, 5, 1, "Новое слово:          ");
+        wrefresh(custom_match_window);
+
+        if (!wcslen(custom_match)) continue;
+
+        if (wcslen(custom_match) == wcslen(state.word_to_analyse)) {
+            if (!does_match_mask(custom_match, mask)) {
+                wattron(custom_match_window, A_STANDOUT);
+                mvwaddwstr(custom_match_window, WORDS_TAB_HEIGHT - 2, 2, mask_error_message);
+                wattroff(custom_match_window, A_STANDOUT);
+                wrefresh(custom_match_window);
+                switch (getch()) {
+                    case '\n':
+                        break;
+                    default:
+                        continue;
+                        break;
+                }
+            }
+            generate_key_from_matches(state.word_to_analyse, custom_match);
+            break;
+        }
+        wattron(custom_match_window, A_STANDOUT);
+        mvwaddwstr(custom_match_window, WORDS_TAB_HEIGHT - 2, 2, error_message);
+        wattroff(custom_match_window, A_STANDOUT);
+    } while (mvwscanw(custom_match_window, 5, 23, "%S", custom_match) != -1);
+    curs_set(0);
+    noecho();
+}
+
 void draw_analyse_word_tab() {
+    wclear(words_tab);
     state.show_decoded = 1;
     wchar_t matching_word[MAX_WORD_LENGTH] = L"";
-    draw_words_tab_frame();
-    mvwprintw(words_tab, 0, WORDS_TAB_WIDTH / 2 - (wcslen(state.word_to_analyse) + 2) / 2, "[%S]",
-              state.word_to_analyse);
     state.matching_word_index = 0;
     do {
+        draw_words_tab_frame();
+        mvwprintw(words_tab, 0, WORDS_TAB_WIDTH / 2 - (wcslen(state.word_to_analyse) + 2) / 2, "[%S]",
+                  state.word_to_analyse);
         wchar_t decoded_word[MAX_WORD_LENGTH] = L"";
         apply_key_to_str(state.word_to_analyse, decoded_word);
         wchar_t mask[ALPHABET_SIZE] = L"";
@@ -309,6 +371,13 @@ void draw_analyse_word_tab() {
                 draw_frequencies_tab();
                 state.word_analysis_mode = SELECT_WORD;
                 break;
+            case ' ':
+                custom_match_input_window();
+                apply_key();
+                wrefresh(text_tab);
+                wrefresh(frequencies_tab);
+                state.word_analysis_mode = SELECT_WORD;
+                break;
         }
     } while (state.word_view_mode == WORD_ANALYSIS && state.word_analysis_mode == ANALYSE_WORD);
     state.skip_input = 1;
@@ -334,7 +403,6 @@ void word_analysis() {
 }
 
 void draw_words_tab_frame() {
-    wclear(words_tab);
     box(words_tab, 0, 0);
     wchar_t *tab_label;
     switch (state.word_view_mode) {
@@ -355,7 +423,6 @@ void draw_words_tab_frame() {
 }
 
 void draw_words_tab() {
-    draw_words_tab_frame();
     switch (state.word_view_mode) {
         case VIEW_BY_LETTERS_COUNT:
             draw_words_by_letters_count();
