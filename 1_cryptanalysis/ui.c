@@ -7,13 +7,14 @@ static const wchar_t select_word_controls_text[] = L"[←]/[→] Выбор сл
 static const wchar_t analyse_word_controls_text[] = L"[BACKSPACE] Выбрать другое слово   [←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
 static const wchar_t common_controls_text[] = L"[W] Режим просмотра слов   [Q] Выйти";
 
+#define TEXT_TAB_HEIGHT (LINES / 2)
 #define TEXT_TAB_WIDTH (2 * COLS / 3)
 
 #define WORDS_TAB_HEIGHT ((LINES / 2) - 5)
 #define WORDS_TAB_WIDTH (2 * COLS / 3)
 
-#define FREQUENCIES_TAB_WIDTH ((COLS / 3 - 2) / 2)
 #define FREQUENCIES_TAB_HEIGHT (LINES - 6)
+#define FREQUENCIES_TAB_WIDTH ((COLS / 3 - 2) / 2)
 
 void draw_frequencies_tab();
 
@@ -39,7 +40,7 @@ void ui_init() {
     state.skip_input = 0;
     state.matching_word_index = 0;
 
-    text_tab = newwin(LINES / 2, TEXT_TAB_WIDTH, 1, 1);
+    text_tab = newwin(TEXT_TAB_HEIGHT, TEXT_TAB_WIDTH, 1, 1);
     controls_tab = newwin(4, COLS - 3, LINES - 5, 1);
     words_tab = newwin(WORDS_TAB_HEIGHT, WORDS_TAB_WIDTH, 1 + LINES / 2, 1);
     frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1, 2 * COLS / 3 + 1);
@@ -81,10 +82,54 @@ void file_selector() {
 }
 
 void draw_text_tab() {
+    wclear(text_tab);
     wchar_t *string = (state.show_decoded) ? apply_key() : get_source_string();
-    unsigned int l = wcslen(string);
-    for (int i = 0; (i * (TEXT_TAB_WIDTH - 5)) < l; i++)
-        mvwaddnwstr(text_tab, 1 + i, 2, string + i * (TEXT_TAB_WIDTH - 5), TEXT_TAB_WIDTH - 5);
+    wchar_t *word = (state.show_decoded) ? get_decoded_words()[state.word_to_analyse_index]
+                                         : get_words()[state.word_to_analyse_index];
+
+    int max_length = TEXT_TAB_WIDTH - 4;
+    const wchar_t *str_pos = string;
+    int win_y = 2;
+    int win_x = 2;
+    size_t word_length = wcslen(word);
+
+    int is_first_letter = 1;
+
+    while (*str_pos) {
+        if (*str_pos == L'\n') {
+            win_y++;
+            win_x = 2;
+        } else {
+            if ((str_pos + 1) && (win_x + first_word_len((str_pos+1)) >= max_length)) {
+                str_pos++;
+                win_y++;
+                win_x = 2;
+            }
+
+            // Check if the current position matches the word
+            if (state.word_view_mode == WORD_ANALYSIS && word_length > 0 && (is_first_letter || iswspace(*(str_pos - 1))) &&
+                wcsncmp(str_pos, word, word_length) == 0
+                && (iswspace(*(str_pos + word_length)) || *(str_pos + word_length) == L'\0' ||
+                    iswpunct(*(str_pos + word_length)))) {
+                // If the current position matches the word, highlight it
+                wattron(text_tab, A_STANDOUT);
+                mvwaddnwstr(text_tab, win_y, win_x, str_pos, word_length);
+                wattroff(text_tab, A_STANDOUT);
+                str_pos += word_length - 1;
+                win_x += word_length;
+            } else {
+                // Otherwise, write the character to the window without highlighting
+                mvwaddnwstr(text_tab, win_y, win_x, str_pos, 1);
+                win_x++;
+            }
+
+            is_first_letter = 0;
+        }
+        if (win_y >= TEXT_TAB_HEIGHT) {
+            break;
+        }
+        str_pos++;
+    }
 
     box(text_tab, 0, 0);
     mvwprintw(text_tab, 0, 1, (state.show_decoded) ? "Расшифрованный текст" : "Исходный текст");
@@ -151,11 +196,12 @@ void draw_words_by_decoded_letters_count() {
 }
 
 void draw_word_selector() {
-    draw_words_tab_frame();
-    mvwprintw(words_tab, 0, WORDS_TAB_WIDTH / 2 - 7, " [Выбор слова]");
 
     do {
+        draw_words_tab_frame();
         wchar_t **words = get_decoded_words();
+        mvwprintw(words_tab, 0, WORDS_TAB_WIDTH / 2 - 7, " [Выбор слова] %S",
+                  get_decoded_words()[state.word_to_analyse_index]);
 
         int x = 2;
         int y = 2;
@@ -169,6 +215,7 @@ void draw_word_selector() {
             }
         }
         wrefresh(words_tab);
+        draw_text_tab();
 
         switch (getch()) {
             case 'w':
@@ -188,9 +235,9 @@ void draw_word_selector() {
                 break;
             case '\n':
                 state.word_analysis_mode = ANALYSE_WORD;
-                wcscpy(state.word_to_analyse, get_words()[state.word_to_analyse_index]);
                 break;
         }
+        wcscpy(state.word_to_analyse, get_words()[state.word_to_analyse_index]);
     } while (state.word_view_mode == WORD_ANALYSIS && state.word_analysis_mode == SELECT_WORD);
     state.skip_input = 1;
 }
@@ -198,6 +245,7 @@ void draw_word_selector() {
 void select_word() {
     draw_controls_tab();
     state.active_letter = -1;
+    state.show_decoded = 1;
     draw_frequencies_tab();
     draw_word_selector();
 }
@@ -206,7 +254,8 @@ void draw_analyse_word_tab() {
     state.show_decoded = 1;
     wchar_t matching_word[MAX_WORD_LENGTH] = L"";
     draw_words_tab_frame();
-    mvwprintw(words_tab, 0, WORDS_TAB_WIDTH/2 - (wcslen(state.word_to_analyse) + 2)/2, "[%S]", state.word_to_analyse);
+    mvwprintw(words_tab, 0, WORDS_TAB_WIDTH / 2 - (wcslen(state.word_to_analyse) + 2) / 2, "[%S]",
+              state.word_to_analyse);
     state.matching_word_index = 0;
     do {
         wchar_t decoded_word[MAX_WORD_LENGTH] = L"";
@@ -214,9 +263,9 @@ void draw_analyse_word_tab() {
         wchar_t mask[ALPHABET_SIZE] = L"";
         generate_mask(decoded_word, mask);
         mvwprintw(words_tab, 2, 2, "%S (%S), %d", decoded_word, mask, state.matching_word_index);
-        mvwhline(words_tab, WORDS_TAB_HEIGHT/4 - 1, 1, 0, WORDS_TAB_WIDTH-2);
+        mvwhline(words_tab, WORDS_TAB_HEIGHT / 4 - 1, 1, 0, WORDS_TAB_WIDTH - 2);
         int x = 2;
-        int y = WORDS_TAB_HEIGHT/4 + 1;
+        int y = WORDS_TAB_HEIGHT / 4 + 1;
         int word_count = 0;
 
 
@@ -329,11 +378,16 @@ void draw_frequencies_tab() {
     for (int i = 0; i < ALPHABET_SIZE; i++) {
         mvwprintw(frequencies_tab, 1 + i, 2, "%C = %lf", ALPHABET_RU[state.indexes[i]], frequencies[state.indexes[i]]);
         wchar_t suggested_letter = (key[state.indexes[i]] > -1) ? ALPHABET_RU[key[state.indexes[i]]] : L'?';
+
         if (i == state.active_letter)
             mvwprintw(frequencies_tab, 1 + i, 14, " [%C]", suggested_letter);
         else
             mvwprintw(frequencies_tab, 1 + i, 14, "  %C ", suggested_letter);
-        if (key[state.indexes[i]] != -1 && !IS_UNIQUE(key, ALPHABET_SIZE, key[state.indexes[i]])) wprintw(frequencies_tab, " !");
+
+        if (key[state.indexes[i]] != -1 && !IS_UNIQUE(key, ALPHABET_SIZE, key[state.indexes[i]]))
+            wprintw(frequencies_tab, " !");
+        else
+            wprintw(frequencies_tab, "  ");
     }
 
 

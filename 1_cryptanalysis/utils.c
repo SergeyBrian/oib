@@ -143,10 +143,10 @@ void sort_words_by_decoded_letters(const wchar_t *input_str, wchar_t *words[], w
     sort_words_by_function(input_str, words, to_free, (unsigned long (*)(wchar_t *)) count_decoded_letters, true);
 }
 
-int count_word_occurrences(const wchar_t *input_str, const wchar_t *word) {
+int count_word_occurrences(const wchar_t *word) {
     int count = 0;
     const size_t word_len = wcslen(word);
-    for (const wchar_t *p = input_str; *p != L'\0'; p++) {
+    for (const wchar_t *p = get_decoded_string(); *p != L'\0'; p++) {
         if (iswspace(*p)) {
             continue;
         }
@@ -163,6 +163,10 @@ int count_word_occurrences(const wchar_t *input_str, const wchar_t *word) {
         }
     }
     return count;
+}
+
+void sort_words_by_frequency(const wchar_t *input_str, wchar_t *words[], wchar_t *to_free[]) {
+    sort_words_by_function(input_str, words, to_free, (unsigned long (*)(wchar_t *)) count_word_occurrences, true);
 }
 
 int wchar_index(const wchar_t *str, wchar_t ch) {
@@ -188,3 +192,9 @@ int char_index(const char *str, char ch) {
     }
 }
 
+int first_word_len(const wchar_t *str) {
+    const wchar_t *p = str;
+    int len = 0;
+    while (*(p+1) && !iswspace(*(p++))) len++;
+    return len;
+}
