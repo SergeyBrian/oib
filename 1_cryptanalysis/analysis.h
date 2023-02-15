@@ -22,6 +22,7 @@ typedef struct {
     double frequencies[ALPHABET_SIZE];
     int key[ALPHABET_SIZE];
     int ready;
+    double min_valid_words;
 } analysis_state;
 
 
@@ -42,5 +43,7 @@ int *get_key_ptr();
 void generate_mask(wchar_t *string, wchar_t *mask);
 void generate_key_from_matches(const wchar_t *encoded, const wchar_t *decoded);
 int does_match_mask(const wchar_t *string, const wchar_t *mask);
+int is_key_valid();
+void bruteforce_key();
 
 #endif //INC_1_CRYPTANALYSIS_ANALYSIS_H

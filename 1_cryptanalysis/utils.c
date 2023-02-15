@@ -35,7 +35,7 @@ int wchar_to_array_index(wchar_t c) {
 int absolute_index(int i, int array_size) {
     i = i % array_size;
     if (i < 0) {
-        i = array_size - i - 2;
+        i = array_size - abs(i);
     }
     return i;
 }

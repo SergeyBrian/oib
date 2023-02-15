@@ -2,6 +2,7 @@
  * Frequent words list is based on info from http://dict.ruslang.ru/freq.php?act=show&dic=freq_freq&title=%D7%E0%F1%F2%EE%F2%ED%FB%E9%20%F1%EF%E8%F1%EE%EA%20%EB%E5%EC%EC
  * Letters frequencies are based on info from https://dpva.ru/Guide/GuideUnitsAlphabets/Alphabets/FrequencyRuLetters/
  * Extended letter frequencies are based on info from https://abakbot.ru/online-5/476-freq2
+ * Impossible combinations list is based on info from https://vl2d.livejournal.com/21053.html
  */
 
 #ifndef INC_1_CRYPTANALYSIS_DATA_H
@@ -17,9 +18,13 @@
 #define MAX_WORD_LENGTH 40
 #define MAX_WORDS 500
 
+#define IMPOSSIBLE_COMBINATIONS_LIST_LENGTH 46
 #define WORDLIST_LENGTH 90
 
-extern const wchar_t *FREQUENT_WORDS_RU[WORDLIST_LENGTH];
+#define DEFAULT_MIN_VALID_WORDS 0.95
+
+extern const wchar_t *IMPOSSIBLE_COMBINATIONS_RU[];
+extern const wchar_t *FREQUENT_WORDS_RU[];
 
 extern const wchar_t *ALPHABET_RU;
 extern const wchar_t *LOWERCASE_ALPHABET_RU;

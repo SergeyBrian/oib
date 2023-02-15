@@ -80,7 +80,9 @@ wchar_t *apply_key() {
             state.decoded_string[i] = state.string[i];
             continue;
         }
-        state.decoded_string[i] = LOWERCASE_ALPHABET_RU[state.key[wchar_to_array_index(state.string[i])]];
+        int a = state.key[wchar_to_array_index(state.string[i])];
+        wchar_t c = LOWERCASE_ALPHABET_RU[a];
+        state.decoded_string[i] = c;
     }
 
 
@@ -102,6 +104,7 @@ void analysis_init() {
     state.string = readfile();
     state.decoded_string = result;
     state.words_count = 0;
+    state.min_valid_words = DEFAULT_MIN_VALID_WORDS;
 
 
     measure_letters_frequency();
@@ -239,3 +242,34 @@ void generate_key_from_matches(const wchar_t *encoded, const wchar_t *decoded) {
         state.key[a] = b;
     }
 }
+
+int evaluate_word(const wchar_t *word) {
+    const wchar_t *p = word;
+
+    while (iswalpha(*(p + 1))) {
+        for (int i = 0; i < IMPOSSIBLE_COMBINATIONS_LIST_LENGTH; i++) {
+            if ((IMPOSSIBLE_COMBINATIONS_RU[i][0] == p[0] && IMPOSSIBLE_COMBINATIONS_RU[i][1] == p[1]) ||
+                (IMPOSSIBLE_COMBINATIONS_RU[i][0] == p[1] && IMPOSSIBLE_COMBINATIONS_RU[i][1] == p[0])) {
+                return 0;
+            }
+        }
+        p++;
+    }
+
+    return 1;
+}
+
+int is_key_valid() {
+    wchar_t **words = get_decoded_words();
+    apply_key();
+
+    int valid_words = 0;
+
+    for (int i = 0; i < get_words_count(); i++) {
+        valid_words += evaluate_word(words[i]);
+    }
+
+    double r = (double) valid_words / get_words_count();
+    return (r >= state.min_valid_words);
+}
+
