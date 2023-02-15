@@ -21,6 +21,19 @@
         UNIQUE_COUNT == 1; \
     })
 
+#define IS_IN_ARRAY(ARR, LEN, ELEMENT) \
+    ({ \
+        int IS_IN = 0; \
+        for (int I = 0; I < LEN; I++) { \
+            if ((ARR)[I] == (ELEMENT)) { \
+                IS_IN = 1; \
+                break; \
+            } \
+        } \
+        IS_IN; \
+    })
+
+
 int wchar_to_array_index(wchar_t c);
 int absolute_index(int i, int array_size);
 void error_exit(const char *message);

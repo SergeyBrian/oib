@@ -6,6 +6,7 @@ static const wchar_t letters_controls_text[] = L"[Tab] Режим просмот
 static const wchar_t select_word_controls_text[] = L"[←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
 static const wchar_t analyse_word_controls_text[] = L"[BACKSPACE] Выбрать другое слово   [SPACE] Ввести свое слово   [←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
 static const wchar_t common_controls_text[] = L"[W] Режим просмотра слов   [Q] Выйти";
+static wchar_t *key_validity_message;
 
 #define TEXT_TAB_HEIGHT (LINES / 2)
 #define TEXT_TAB_WIDTH (2 * COLS / 3)
@@ -41,6 +42,9 @@ void ui_init() {
     state.skip_input = 0;
     state.matching_word_index = 0;
     state.custom_match_words_count = 0;
+
+
+    key_validity_message = calloc(sizeof(wchar_t), 30);
 
     text_tab = newwin(TEXT_TAB_HEIGHT, TEXT_TAB_WIDTH, 1, 1);
     controls_tab = newwin(4, COLS - 3, LINES - 5, 1);
@@ -438,6 +442,7 @@ void draw_words_tab() {
 }
 
 void draw_frequencies_tab() {
+    wclear(frequencies_tab);
     double *frequencies = get_frequencies();
 
     int *key = get_key_ptr();
@@ -461,6 +466,14 @@ void draw_frequencies_tab() {
     for (int i = 0; i < ALPHABET_SIZE; i++) {
         mvwprintw(expected_frequencies_tab, 1 + i, 2, "%C = %lf\n", ALPHABET_RU[state.expected_indexes[i]],
                   FREQUENCIES_RU[state.expected_indexes[i]]);
+    }
+
+    if (!IS_IN_ARRAY(key, ALPHABET_SIZE, -1)) {
+        apply_key();
+        wcscpy(key_validity_message, ((is_key_valid())  ? L"Ключ вероятно верный" : L"Ключ вероятно неверный"));
+        wattron(frequencies_tab, A_STANDOUT);
+        mvwaddwstr(frequencies_tab, FREQUENCIES_TAB_HEIGHT - 2, ((FREQUENCIES_TAB_WIDTH - wcslen(key_validity_message)) / 2), key_validity_message);
+        wattroff(frequencies_tab, A_STANDOUT);
     }
 
     box(frequencies_tab, 0, 0);
