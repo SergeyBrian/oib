@@ -274,7 +274,9 @@ void custom_match_input_window() {
     apply_key_to_str(state.word_to_analyse, decoded_word);
 
     wchar_t mask[MAX_WORD_LENGTH] = L"";
+    wchar_t base_mask[MAX_WORD_LENGTH] = L"";
     generate_mask(decoded_word, mask);
+    generate_mask(state.word_to_analyse, base_mask);
 
     wchar_t custom_match[MAX_WORD_LENGTH] = L"";
 
@@ -284,7 +286,7 @@ void custom_match_input_window() {
         mvwprintw(custom_match_window, 0, 1, "Добавление своего слова");
         mvwprintw(custom_match_window, 2, 1, "Исходное слово:       %S", state.word_to_analyse);
         mvwprintw(custom_match_window, 3, 1, "Расшифрованное слово: %S", decoded_word);
-        mvwprintw(custom_match_window, 4, 1, "Маска слова:          %S", mask);
+        mvwprintw(custom_match_window, 4, 1, "Маска слова:          %S (%S)", mask, base_mask);
         mvwprintw(custom_match_window, 5, 1, "Новое слово:          ");
         wrefresh(custom_match_window);
 
@@ -525,6 +527,12 @@ void main_page() {
                     break;
                 case 'w':
                     state.word_view_mode = absolute_index(state.word_view_mode + 1, UI_WORD_VIEW_MODE_ENUM_SIZE);
+                    break;
+                case 'u':
+                    undo_key_change();
+                    break;
+                case 'r':
+                    redo_key_change();
                     break;
             }
         }

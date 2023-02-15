@@ -74,6 +74,7 @@ void find_most_frequent_ngram(int n, wchar_t *result) {
 }
 
 wchar_t *apply_key() {
+    add_key_to_history();
     unsigned int l = wcslen(state.string);
     for (int i = 0; i < l; i++) {
         if (!iswalpha(state.string[i]) || state.key[wchar_to_array_index(state.string[i])] == -1) {
@@ -105,6 +106,7 @@ void analysis_init() {
     state.decoded_string = result;
     state.words_count = 0;
     state.min_valid_words = DEFAULT_MIN_VALID_WORDS;
+    state.history_index = -1;
 
 
     measure_letters_frequency();
@@ -273,3 +275,36 @@ int is_key_valid() {
     return (r >= state.min_valid_words);
 }
 
+void add_key_to_history() {
+    state.history_index++;
+    if (state.history_index == HISTORY_SIZE) {
+        for (int i = 0; i < HISTORY_SIZE - COUNT_OF_HISTORY_KEYS_TO_REMOVE; i++) {
+            free(state.key_history[i]);
+            state.key_history[i] = state.key_history[i+COUNT_OF_HISTORY_KEYS_TO_REMOVE];
+            state.key_history[i+COUNT_OF_HISTORY_KEYS_TO_REMOVE] = NULL;
+        }
+        state.history_index -= COUNT_OF_HISTORY_KEYS_TO_REMOVE;
+    }
+
+    if (state.key_history[state.history_index] == NULL) state.key_history[state.history_index] = calloc(sizeof(int), ALPHABET_SIZE);
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        state.key_history[state.history_index][i] = state.key[i];
+    }
+
+}
+
+void undo_key_change() {
+    if ((state.history_index - 1) < 0) return;
+    state.history_index--;
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        state.key[i] = state.key_history[state.history_index][i];
+    }
+}
+
+void redo_key_change() {
+    if (state.key_history[state.history_index+1] == NULL) return;
+    state.history_index++;
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        state.key[i] = state.key_history[state.history_index][i];
+    }
+}

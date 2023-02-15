@@ -23,6 +23,8 @@ typedef struct {
     int key[ALPHABET_SIZE];
     int ready;
     double min_valid_words;
+    int *key_history[HISTORY_SIZE];
+    int history_index;
 } analysis_state;
 
 
@@ -44,6 +46,8 @@ void generate_mask(wchar_t *string, wchar_t *mask);
 void generate_key_from_matches(const wchar_t *encoded, const wchar_t *decoded);
 int does_match_mask(const wchar_t *string, const wchar_t *mask);
 int is_key_valid();
-void bruteforce_key();
+void add_key_to_history();
+void undo_key_change();
+void redo_key_change();
 
 #endif //INC_1_CRYPTANALYSIS_ANALYSIS_H
