@@ -333,7 +333,7 @@ void custom_match_input_window() {
         if (!wcslen(custom_match)) continue;
 
         if (wcslen(custom_match) == wcslen(state.word_to_analyse)) {
-            if (!does_match_mask(custom_match, mask)) {
+            if (!does_match_mask(custom_match, mask, 0)) {
                 wattron(custom_match_window, A_STANDOUT);
                 mvwaddwstr(custom_match_window, WORDS_TAB_HEIGHT - 2, 2, mask_error_message);
                 wattroff(custom_match_window, A_STANDOUT);
@@ -389,7 +389,7 @@ void draw_analyse_word_tab() {
 
 
         for (int i = 0; i < WORDLIST_LENGTH; i++) {
-            if (!does_match_mask(FREQUENT_WORDS_RU[i], mask)) continue;
+            if (!does_match_mask(FREQUENT_WORDS_RU[i], mask, 0)) continue;
             char *format = (word_count == state.matching_word_index) ? "[%S] " : " %S  ";
             if (word_count++ == state.matching_word_index) {
                 wcscpy(matching_word, FREQUENT_WORDS_RU[i]);
@@ -528,7 +528,7 @@ void draw_frequencies_tab() {
                   FREQUENCIES_RU[state.expected_indexes[i]]);
     }
 
-    if (!IS_IN_ARRAY(key, ALPHABET_SIZE, -1)) {
+    if (!DOES_CONTAIN(key, ALPHABET_SIZE, -1)) {
         apply_key();
         wcscpy(key_validity_message, ((is_key_valid()) ? L"Ключ вероятно верный" : L"Ключ вероятно неверный"));
         wattron(frequencies_tab, A_STANDOUT);

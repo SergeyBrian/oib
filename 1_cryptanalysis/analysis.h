@@ -60,7 +60,7 @@ void generate_mask(wchar_t *string, wchar_t *mask);
 
 void generate_key_from_matches(const wchar_t *encoded, const wchar_t *decoded);
 
-int does_match_mask(const wchar_t *string, const wchar_t *mask);
+int does_match_mask(const wchar_t *string, const wchar_t *mask, int strict_mode);
 
 int is_key_valid();
 

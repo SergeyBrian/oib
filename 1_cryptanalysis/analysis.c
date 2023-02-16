@@ -185,7 +185,7 @@ void generate_mask(wchar_t *string, wchar_t *mask) {
     }
 }
 
-int does_match_mask(const wchar_t *string, const wchar_t *mask) {
+int does_match_mask(const wchar_t *string, const wchar_t *mask, int strict_mode) {
     unsigned int l = wcslen(string);
     wchar_t variables[10] = L"";
 
@@ -195,8 +195,8 @@ int does_match_mask(const wchar_t *string, const wchar_t *mask) {
             if (string[i] != mask[i]) return 0;
             continue;
         }
+        if (strict_mode && DOES_CONTAIN(mask, l, string[i])) return 0;
         if (!variables[wchar_index(variable_symbols, mask[i])]) {
-//            if (i == l - 1 && wchar_index(variables, string[i]) == -1) return 0;
             variables[wchar_index(variable_symbols, mask[i])] = string[i];
             int c = 0;
             for (int j = 0; j < 10; j++) {
@@ -248,6 +248,21 @@ void generate_key_from_matches(const wchar_t *encoded, const wchar_t *decoded) {
 int evaluate_word(const wchar_t *word) {
     const wchar_t *p = word;
 
+    unsigned int l = wcslen(word);
+
+    if (l >= 2) {
+        int vowels_count = 0;
+
+        for (int i = 0; i < l; i++) {
+            if (is_vowel(word[i])) {
+                if (vowels_count >= 2) return 0;
+                vowels_count++;
+            } else if (vowels_count) break;
+        }
+        if (!vowels_count) return 0;
+    }
+
+
     while (iswalpha(*(p + 1))) {
         for (int i = 0; i < IMPOSSIBLE_COMBINATIONS_LIST_LENGTH; i++) {
             if ((IMPOSSIBLE_COMBINATIONS_RU[i][0] == p[0] && IMPOSSIBLE_COMBINATIONS_RU[i][1] == p[1]) ||
@@ -262,8 +277,8 @@ int evaluate_word(const wchar_t *word) {
 }
 
 int is_key_valid() {
-    wchar_t **words = get_decoded_words();
     apply_key();
+    wchar_t **words = get_decoded_words();
 
     int valid_words = 0;
 

@@ -25,6 +25,8 @@
 
 #define DEFAULT_MIN_VALID_WORDS 0.95
 
+#define VOWELS_COUNT 6
+
 extern const wchar_t *IMPOSSIBLE_COMBINATIONS_RU[];
 extern const wchar_t *FREQUENT_WORDS_RU[];
 
@@ -32,6 +34,8 @@ extern const wchar_t *ALPHABET_RU;
 extern const wchar_t *LOWERCASE_ALPHABET_RU;
 
 extern const double FREQUENCIES_RU[];
+
+extern const wchar_t VOWELS[];
 
 // {Average frequency, Frequency at word start, frequency at word middle, frequency at word end}
 extern const double EXTENDED_FREQUENCIES_RU[][4];

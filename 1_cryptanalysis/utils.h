@@ -21,7 +21,7 @@
         UNIQUE_COUNT == 1; \
     })
 
-#define IS_IN_ARRAY(ARR, LEN, ELEMENT) \
+#define DOES_CONTAIN(ARR, LEN, ELEMENT) \
     ({ \
         int IS_IN = 0; \
         for (int I = 0; I < LEN; I++) { \
@@ -59,6 +59,8 @@ int wchar_index(const wchar_t *str, wchar_t ch);
 int first_word_len(const wchar_t *str);
 
 void quit();
+
+int is_vowel(wchar_t c);
 
 
 #endif //INC_1_CRYPTANALYSIS_UTILS_H

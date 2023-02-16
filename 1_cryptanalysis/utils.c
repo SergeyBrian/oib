@@ -100,7 +100,6 @@ sort_words_by_function(const wchar_t *input_str, wchar_t *words[], wchar_t *to_f
         }
         *p = L'\0';
         ++p;
-        words[word_count] = (wchar_t *) malloc(sizeof(wchar_t) * (wcslen(start) + 1));
         if (to_free != NULL) to_free[word_count] = words[word_count];
         wcscpy(words[word_count++], start);
     }
@@ -197,4 +196,12 @@ int first_word_len(const wchar_t *str) {
     int len = 0;
     while (*(p + 1) && !iswspace(*(p++))) len++;
     return len;
+}
+
+int is_vowel(wchar_t c) {
+    for (int i = 0; i < VOWELS_COUNT; i++) {
+        if (c == VOWELS[i]) return 1;
+    }
+
+    return 0;
 }

@@ -167,6 +167,8 @@ const wchar_t *FREQUENT_WORDS_RU[] = {
 const wchar_t *LOWERCASE_ALPHABET_RU = L"абвгдежзийклмнопрстуфхцчшщъыьэюя";
 const wchar_t *ALPHABET_RU = L"АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
 
+const wchar_t VOWELS[] = L"аоиыуэ";
+
 const double FREQUENCIES_RU[] = {
         0.0799, // а
         0.0159, // б
