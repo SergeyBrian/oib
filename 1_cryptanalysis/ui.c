@@ -17,9 +17,15 @@ static wchar_t *key_validity_message;
 #define FREQUENCIES_TAB_HEIGHT (LINES - 6)
 #define FREQUENCIES_TAB_WIDTH ((COLS / 3 - 2) / 2)
 
+#define CTRL(x) ((x) & 0x1f)
+
 void draw_frequencies_tab();
 
 void draw_words_tab_frame();
+
+void undo();
+
+void redo();
 
 WINDOW *frequencies_tab;
 WINDOW *expected_frequencies_tab;
@@ -249,6 +255,14 @@ void draw_word_selector() {
             case '\n':
                 state.word_analysis_mode = ANALYSE_WORD;
                 break;
+            case 'u':
+                undo();
+                draw_frequencies_tab();
+                break;
+            case CTRL('r'):
+                redo();
+                draw_frequencies_tab();
+                break;
         }
         wcscpy(state.word_to_analyse, get_words()[state.word_to_analyse_index]);
     } while (state.word_view_mode == WORD_ANALYSIS && state.word_analysis_mode == SELECT_WORD);
@@ -306,6 +320,7 @@ void custom_match_input_window() {
                         break;
                 }
             }
+            add_key_to_history();
             generate_key_from_matches(state.word_to_analyse, custom_match);
             break;
         }
@@ -315,6 +330,16 @@ void custom_match_input_window() {
     } while (mvwscanw(custom_match_window, 5, 23, "%S", custom_match) != -1);
     curs_set(0);
     noecho();
+}
+
+void undo() {
+    undo_key_change();
+    apply_key();
+}
+
+void redo() {
+    redo_key_change();
+    apply_key();
 }
 
 void draw_analyse_word_tab() {
@@ -371,6 +396,7 @@ void draw_analyse_word_tab() {
                 state.matching_word_index = absolute_index(state.matching_word_index - 1, word_count);
                 break;
             case '\n':
+                add_key_to_history();
                 generate_key_from_matches(state.word_to_analyse, matching_word);
                 apply_key();
                 draw_text_tab();
@@ -383,6 +409,12 @@ void draw_analyse_word_tab() {
                 wrefresh(text_tab);
                 wrefresh(frequencies_tab);
                 state.word_analysis_mode = SELECT_WORD;
+                break;
+            case 'u':
+                undo();
+                break;
+            case CTRL('r'):
+                redo();
                 break;
         }
     } while (state.word_view_mode == WORD_ANALYSIS && state.word_analysis_mode == ANALYSE_WORD);
@@ -529,10 +561,13 @@ void main_page() {
                     state.word_view_mode = absolute_index(state.word_view_mode + 1, UI_WORD_VIEW_MODE_ENUM_SIZE);
                     break;
                 case 'u':
-                    undo_key_change();
+                    undo();
                     break;
-                case 'r':
-                    redo_key_change();
+                case CTRL('r'):
+                    redo();
+                    break;
+                case 's':
+                    add_key_to_history();
                     break;
             }
         }

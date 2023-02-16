@@ -61,7 +61,6 @@ int main(int argc, char **argv) {
     ui_init();
     ui_set_page(FILE_SELECTOR);
 
-
     char *params[20] = {0};
 
     if (argc > 1) {
