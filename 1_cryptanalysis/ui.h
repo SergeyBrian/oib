@@ -47,8 +47,11 @@ typedef struct {
 } ui_state;
 
 void ui_init();
+
 void ui_set_page(ui_page page);
+
 void ui_update();
+
 void ui_quit();
 
 #endif //INC_1_CRYPTANALYSIS_UI_H

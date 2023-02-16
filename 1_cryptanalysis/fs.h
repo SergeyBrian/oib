@@ -9,6 +9,7 @@
 
 
 int open_file(char *filename);
+
 wchar_t *readfile();
 
 #endif //INC_1_CRYPTANALYSIS_FS_H

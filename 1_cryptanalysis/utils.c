@@ -195,6 +195,6 @@ int char_index(const char *str, char ch) {
 int first_word_len(const wchar_t *str) {
     const wchar_t *p = str;
     int len = 0;
-    while (*(p+1) && !iswspace(*(p++))) len++;
+    while (*(p + 1) && !iswspace(*(p++))) len++;
     return len;
 }

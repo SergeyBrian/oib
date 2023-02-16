@@ -27,6 +27,32 @@ void undo();
 
 void redo();
 
+void file_selector();
+
+void draw_text_tab();
+
+void draw_controls_tab();
+
+void draw_words_by_letters_count();
+
+void draw_words_by_decoded_letters_count();
+
+void draw_word_selector();
+
+void select_word();
+
+void custom_match_input_window();
+
+void draw_analyse_word_tab();
+
+void analyse_word();
+
+void word_analysis();
+
+void draw_words_tab();
+
+void main_page();
+
 WINDOW *frequencies_tab;
 WINDOW *expected_frequencies_tab;
 WINDOW *words_tab;
@@ -504,9 +530,10 @@ void draw_frequencies_tab() {
 
     if (!IS_IN_ARRAY(key, ALPHABET_SIZE, -1)) {
         apply_key();
-        wcscpy(key_validity_message, ((is_key_valid())  ? L"Ключ вероятно верный" : L"Ключ вероятно неверный"));
+        wcscpy(key_validity_message, ((is_key_valid()) ? L"Ключ вероятно верный" : L"Ключ вероятно неверный"));
         wattron(frequencies_tab, A_STANDOUT);
-        mvwaddwstr(frequencies_tab, FREQUENCIES_TAB_HEIGHT - 2, ((FREQUENCIES_TAB_WIDTH - wcslen(key_validity_message)) / 2), key_validity_message);
+        mvwaddwstr(frequencies_tab, FREQUENCIES_TAB_HEIGHT - 2,
+                   ((FREQUENCIES_TAB_WIDTH - wcslen(key_validity_message)) / 2), key_validity_message);
         wattroff(frequencies_tab, A_STANDOUT);
     }
 
