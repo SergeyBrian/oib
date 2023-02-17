@@ -13,6 +13,12 @@ typedef struct {
     int count;
 } ngram;
 
+typedef enum {
+    NO_MATCH,
+    MATCH,
+    STRICT_MATCH
+} match_type;
+
 typedef struct {
     wchar_t *string;
     wchar_t *decoded_string;
@@ -65,7 +71,7 @@ void generate_mask(wchar_t *string, wchar_t *mask);
 
 void generate_key_from_matches(const wchar_t *encoded, const wchar_t *decoded);
 
-int does_match_mask(const wchar_t *string, const wchar_t *mask, int strict_mode);
+match_type does_match_mask(const wchar_t *string, const wchar_t *mask);
 
 int is_key_valid();
 

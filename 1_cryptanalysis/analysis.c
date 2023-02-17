@@ -191,31 +191,32 @@ void generate_mask(wchar_t *string, wchar_t *mask) {
     }
 }
 
-int does_match_mask(const wchar_t *string, const wchar_t *mask, int strict_mode) {
+match_type does_match_mask(const wchar_t *string, const wchar_t *mask) {
     unsigned int l = wcslen(string);
     wchar_t variables[10] = L"";
+    match_type result = STRICT_MATCH;
 
-    if (l != wcslen(mask)) return 0;
+    if (l != wcslen(mask)) return NO_MATCH;
     for (int i = 0; i < l; i++) {
         if (iswalpha(mask[i])) {
-            if (string[i] != mask[i]) return 0;
+            if (string[i] != mask[i]) return NO_MATCH;
             continue;
         }
-        if (strict_mode && DOES_CONTAIN(mask, l, string[i])) return 0;
+        if (DOES_CONTAIN(mask, l, string[i])) result = MATCH;
         if (!variables[wchar_index(variable_symbols, mask[i])]) {
             variables[wchar_index(variable_symbols, mask[i])] = string[i];
             int c = 0;
             for (int j = 0; j < 10; j++) {
                 if (variables[j] == string[i]) {
                     c++;
-                    if (c > 1) return 0;
+                    if (c > 1) return NO_MATCH;
                 }
             }
             continue;
         }
-        if (variables[wchar_index(variable_symbols, mask[i])] != string[i]) return 0;
+        if (variables[wchar_index(variable_symbols, mask[i])] != string[i]) return NO_MATCH;
     }
-    return 1;
+    return result;
 }
 
 void apply_key_to_str(const wchar_t *string, wchar_t *decoded_string) {

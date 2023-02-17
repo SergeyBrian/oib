@@ -64,6 +64,12 @@ WINDOW *custom_match_window;
 void ui_init() {
     initscr();
     echo();
+    start_color();
+
+    init_pair(1, COLOR_BLACK, COLOR_YELLOW);
+    init_pair(2, COLOR_WHITE, COLOR_RED);
+    init_pair(3, COLOR_WHITE, COLOR_GREEN);
+
     state.height = LINES;
     state.width = COLS;
     state.show_decoded = 0;
@@ -152,9 +158,11 @@ void draw_text_tab() {
                 && (iswspace(*(str_pos + word_length)) || *(str_pos + word_length) == L'\0' ||
                     iswpunct(*(str_pos + word_length)))) {
                 // If the current position matches the word, highlight it
-                wattron(text_tab, A_STANDOUT);
+//                wattron(text_tab, A_STANDOUT);
+                wattron(text_tab, COLOR_PAIR(3));
                 mvwaddnwstr(text_tab, win_y, win_x, str_pos, word_length);
-                wattroff(text_tab, A_STANDOUT);
+                wattroff(text_tab, COLOR_PAIR(3));
+//                wattroff(text_tab, A_STANDOUT);
                 str_pos += word_length - 1;
                 win_x += word_length;
             } else {
@@ -220,7 +228,6 @@ void draw_words_by_decoded_letters_count() {
     wclear(words_tab);
     draw_words_tab_frame();
     wchar_t **words = get_words_sorted_by_decoded_letters();
-
 
 
     int x = 2;
@@ -294,7 +301,6 @@ void draw_word_selector() {
 
 void select_word() {
     draw_controls_tab();
-    state.active_letter = -1;
     state.show_decoded = 1;
     draw_frequencies_tab();
     draw_word_selector();
@@ -306,7 +312,7 @@ void custom_match_input_window() {
     wchar_t message[] = L"Введите слово: ";
     wchar_t error_message[] = L"Длины слов не совпадают!";
     wchar_t mask_error_message[] = L"Введенное слово не совпадает с маской!   [ENTER] Подтвердить   [BACKSPACE] Ввести заново";
-
+    wchar_t mask_strict_error_message[] = L"Буквы в слове не совпадают с ключом!   [ENTER] Подтвердить   [BACKSPACE] Ввести заново";
     wchar_t decoded_word[MAX_WORD_LENGTH] = L"";
     apply_key_to_str(state.word_to_analyse, decoded_word);
 
@@ -330,9 +336,11 @@ void custom_match_input_window() {
         if (!wcslen(custom_match)) continue;
 
         if (wcslen(custom_match) == wcslen(state.word_to_analyse)) {
-            if (!does_match_mask(custom_match, mask, 0)) {
+            match_type match = does_match_mask(custom_match, mask);
+            if (match != STRICT_MATCH) {
                 wattron(custom_match_window, A_STANDOUT);
-                mvwaddwstr(custom_match_window, WORDS_TAB_HEIGHT - 2, 2, mask_error_message);
+                mvwaddwstr(custom_match_window, WORDS_TAB_HEIGHT - 2, 2,
+                           ((match) ? mask_strict_error_message : mask_error_message));
                 wattroff(custom_match_window, A_STANDOUT);
                 wrefresh(custom_match_window);
                 switch (getch()) {
@@ -384,20 +392,34 @@ void draw_analyse_word_tab() {
         int y = WORDS_TAB_HEIGHT / 4 + 1;
         int word_count = 0;
 
+        int has_not_strict_matches = 0;
 
         for (int i = 0; i < WORDLIST_LENGTH; i++) {
-            if (!does_match_mask(FREQUENT_WORDS_RU[i], mask, 0)) continue;
+            match_type match = does_match_mask(FREQUENT_WORDS_RU[i], mask);
+            if (!match) continue;
             char *format = (word_count == state.matching_word_index) ? "[%S] " : " %S  ";
             if (word_count++ == state.matching_word_index) {
                 wcscpy(matching_word, FREQUENT_WORDS_RU[i]);
             }
+            if (match != STRICT_MATCH) {
+                wattron(words_tab, COLOR_PAIR(1));
+                has_not_strict_matches = 1;
+            }
             mvwprintw(words_tab, y, x, format, FREQUENT_WORDS_RU[i]);
+            wattroff(words_tab, COLOR_PAIR(1));
             x += wcslen(FREQUENT_WORDS_RU[i]) + 2;
             if (x + ((FREQUENT_WORDS_RU[i + 1]) ? wcslen(FREQUENT_WORDS_RU[i + 1]) : 0) >= (2 * COLS / 3) - 5) {
                 y++;
                 x = 2;
             }
         }
+
+        if (has_not_strict_matches) {
+            wattron(words_tab, COLOR_PAIR(1));
+            mvwprintw(words_tab, WORDS_TAB_HEIGHT - 2, 2, "Желтые слова создадут дубликаты букв при выборе!");
+            wattroff(words_tab, COLOR_PAIR(1));
+        }
+
         wrefresh(words_tab);
         refresh();
         switch (getch()) {
@@ -507,16 +529,16 @@ void draw_frequencies_tab() {
     for (int i = 0; i < ALPHABET_SIZE; i++) {
         mvwprintw(frequencies_tab, 1 + i, 2, "%C = %lf", ALPHABET_RU[state.indexes[i]], frequencies[state.indexes[i]]);
         wchar_t suggested_letter = (key[state.indexes[i]] > -1) ? ALPHABET_RU[key[state.indexes[i]]] : L'?';
+        if (key[state.indexes[i]] != -1 && !IS_UNIQUE(key, ALPHABET_SIZE, key[state.indexes[i]])) {
+            wattron(frequencies_tab, COLOR_PAIR(2));
+        }
 
-        if (i == state.active_letter)
+        if (state.word_view_mode != WORD_ANALYSIS && i == state.active_letter)
             mvwprintw(frequencies_tab, 1 + i, 14, " [%C]", suggested_letter);
         else
             mvwprintw(frequencies_tab, 1 + i, 14, "  %C ", suggested_letter);
 
-        if (key[state.indexes[i]] != -1 && !IS_UNIQUE(key, ALPHABET_SIZE, key[state.indexes[i]]))
-            wprintw(frequencies_tab, " !");
-        else
-            wprintw(frequencies_tab, "  ");
+        wattroff(frequencies_tab, COLOR_PAIR(2));
     }
 
 
