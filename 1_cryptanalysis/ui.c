@@ -205,7 +205,7 @@ void draw_words_by_letters_count() {
 
     wchar_t **words = (state.show_decoded) ? get_decoded_words() : get_words();
 
-    for (int i = 0; words[i] != NULL; i++) {
+    for (int i = 0; i < get_words_count(); i++) {
         mvwprintw(words_tab, y, x, "%S ", words[i]);
         x += wcslen(words[i]) + 1;
         if (x + ((words[i + 1]) ? wcslen(words[i + 1]) : 0) >= (2 * COLS / 3) - 5) {
@@ -219,22 +219,19 @@ void draw_words_by_letters_count() {
 void draw_words_by_decoded_letters_count() {
     wclear(words_tab);
     draw_words_tab_frame();
-    wchar_t *words[MAX_WORDS] = {0};
-    wchar_t *to_free[MAX_WORDS] = {0};
-    sort_words_by_decoded_letters(apply_key(), words, to_free);
+    wchar_t **words = get_words_sorted_by_decoded_letters();
+
+
 
     int x = 2;
     int y = 2;
-    for (int i = 0; words[i] != NULL; i++) {
+    for (int i = 0; i < get_words_count(); i++) {
         mvwprintw(words_tab, y, x, "%S ", words[i]);
         x += wcslen(words[i]) + 1;
         if (x + ((words[i + 1]) ? wcslen(words[i + 1]) : 0) >= (2 * COLS / 3) - 5) {
             y++;
             x = 2;
         }
-    }
-    for (int i = 0; i < MAX_WORDS; i++) {
-        free(to_free[i]);
     }
     wrefresh(words_tab);
 }
@@ -246,7 +243,7 @@ void draw_word_selector() {
         draw_words_tab_frame();
         wchar_t **words = get_decoded_words();
         mvwprintw(words_tab, 0, WORDS_TAB_WIDTH / 2 - 7, " [Выбор слова] %S",
-                  get_decoded_words()[state.word_to_analyse_index]);
+                  words[state.word_to_analyse_index]);
 
         int x = 2;
         int y = 2;

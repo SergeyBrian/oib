@@ -18,6 +18,7 @@ typedef struct {
     wchar_t *decoded_string;
     wchar_t **words;
     wchar_t **decoded_words;
+    wchar_t **decoded_words_sorted;
     int words_count;
     double frequencies[ALPHABET_SIZE];
     int key[ALPHABET_SIZE];
@@ -50,7 +51,11 @@ wchar_t **get_words();
 
 wchar_t **get_decoded_words();
 
+wchar_t **get_words_sorted_by_decoded_letters();
+
 int get_words_count();
+
+void set_words_count(int count);
 
 void match_frequencies(const double freq1[], const double freq2[], int matches[]);
 

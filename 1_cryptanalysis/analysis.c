@@ -85,6 +85,9 @@ wchar_t *apply_key() {
         state.decoded_string[i] = c;
     }
 
+    for (int i = 0; i < get_words_count(); i++) {
+        apply_key_to_str(get_words()[i], get_decoded_words()[i]);
+    }
 
     return state.decoded_string;
 }
@@ -123,10 +126,13 @@ void analysis_init() {
         state.decoded_words[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
     }
 
-    sort_words_by_length(state.string, state.words, NULL);
-    for (int i = 0; state.words[i] != NULL; i++) {
-        state.words_count++;
+    state.decoded_words_sorted = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
+    for (int i = 0; i < MAX_WORDS; i++) {
+        state.decoded_words_sorted[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
     }
+
+    sort_words_by_length(state.string, state.words);
+    apply_key();
 }
 
 wchar_t *get_source_string() {
@@ -228,12 +234,20 @@ wchar_t **get_words() {
 }
 
 wchar_t **get_decoded_words() {
-    sort_words_by_length(state.decoded_string, state.decoded_words, NULL);
     return state.decoded_words;
+}
+
+wchar_t **get_words_sorted_by_decoded_letters() {
+    sort_words_by_decoded_letters(state.decoded_string, state.decoded_words_sorted);
+    return state.decoded_words_sorted;
 }
 
 int get_words_count() {
     return state.words_count;
+}
+
+void set_words_count(int count) {
+    state.words_count = count;
 }
 
 void generate_key_from_matches(const wchar_t *encoded, const wchar_t *decoded) {
