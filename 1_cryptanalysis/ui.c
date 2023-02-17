@@ -65,6 +65,7 @@ void ui_init() {
     initscr();
     echo();
     start_color();
+    curs_set(0);
 
     init_pair(1, COLOR_BLACK, COLOR_YELLOW);
     init_pair(2, COLOR_WHITE, COLOR_RED);
@@ -100,6 +101,7 @@ void ui_set_page(ui_page page) {
 int show_file_open_error = 0;
 
 void file_selector() {
+    curs_set(1);
     while (!state.is_input_file_open) {
         file_window = newwin(LINES / 2, COLS / 2, LINES / 4, COLS / 4);
         box(file_window, 0, 0);
@@ -118,11 +120,12 @@ void file_selector() {
             state.current_page = MAIN_PAGE;
             show_file_open_error = 0;
             state.is_input_file_open = 1;
-            return;
+            break;
         }
 
         show_file_open_error = 1;
     }
+    curs_set(0);
     delwin(file_window);
 }
 
@@ -158,11 +161,9 @@ void draw_text_tab() {
                 && (iswspace(*(str_pos + word_length)) || *(str_pos + word_length) == L'\0' ||
                     iswpunct(*(str_pos + word_length)))) {
                 // If the current position matches the word, highlight it
-//                wattron(text_tab, A_STANDOUT);
                 wattron(text_tab, COLOR_PAIR(3));
                 mvwaddnwstr(text_tab, win_y, win_x, str_pos, word_length);
                 wattroff(text_tab, COLOR_PAIR(3));
-//                wattroff(text_tab, A_STANDOUT);
                 str_pos += word_length - 1;
                 win_x += word_length;
             } else {
@@ -338,10 +339,10 @@ void custom_match_input_window() {
         if (wcslen(custom_match) == wcslen(state.word_to_analyse)) {
             match_type match = does_match_mask(custom_match, mask);
             if (match != STRICT_MATCH) {
-                wattron(custom_match_window, A_STANDOUT);
+                wattron(custom_match_window, COLOR_PAIR(2));
                 mvwaddwstr(custom_match_window, WORDS_TAB_HEIGHT - 2, 2,
                            ((match) ? mask_strict_error_message : mask_error_message));
-                wattroff(custom_match_window, A_STANDOUT);
+                wattroff(custom_match_window, COLOR_PAIR(2));
                 wrefresh(custom_match_window);
                 switch (getch()) {
                     case '\n':
@@ -353,12 +354,17 @@ void custom_match_input_window() {
             }
             add_key_to_history();
             generate_key_from_matches(state.word_to_analyse, custom_match);
+            state.word_analysis_mode = SELECT_WORD;
+            curs_set(0);
+            noecho();
+            return;
             break;
         }
-        wattron(custom_match_window, A_STANDOUT);
+        wattron(custom_match_window, COLOR_PAIR(2));
         mvwaddwstr(custom_match_window, WORDS_TAB_HEIGHT - 2, 2, error_message);
-        wattroff(custom_match_window, A_STANDOUT);
+        wattroff(custom_match_window, COLOR_PAIR(2));
     } while (mvwscanw(custom_match_window, 5, 23, "%S", custom_match) != -1);
+    state.word_analysis_mode = ANALYSE_WORD;
     curs_set(0);
     noecho();
 }
@@ -386,7 +392,7 @@ void draw_analyse_word_tab() {
         apply_key_to_str(state.word_to_analyse, decoded_word);
         wchar_t mask[ALPHABET_SIZE] = L"";
         generate_mask(decoded_word, mask);
-        mvwprintw(words_tab, 2, 2, "%S (%S), %d", decoded_word, mask, state.matching_word_index);
+        mvwprintw(words_tab, 2, 2, "%S (%S)", decoded_word, mask);
         mvwhline(words_tab, WORDS_TAB_HEIGHT / 4 - 1, 1, 0, WORDS_TAB_WIDTH - 2);
         int x = 2;
         int y = WORDS_TAB_HEIGHT / 4 + 1;
@@ -453,7 +459,6 @@ void draw_analyse_word_tab() {
                 apply_key();
                 wrefresh(text_tab);
                 wrefresh(frequencies_tab);
-                state.word_analysis_mode = SELECT_WORD;
                 break;
             case 'u':
                 undo();
@@ -547,13 +552,31 @@ void draw_frequencies_tab() {
                   FREQUENCIES_RU[state.expected_indexes[i]]);
     }
 
-    if (!DOES_CONTAIN(key, ALPHABET_SIZE, -1)) {
+    if (INDEX_OF(key, ALPHABET_SIZE, -1) == -1) {
         apply_key();
-        wcscpy(key_validity_message, ((is_key_valid()) ? L"Ключ вероятно верный" : L"Ключ вероятно неверный"));
-        wattron(frequencies_tab, A_STANDOUT);
+        int key_valid = is_key_valid();
+        wcscpy(key_validity_message, ((key_valid) ? L"Ключ вероятно верный" : L"Ключ вероятно неверный"));
+        wattron(frequencies_tab, COLOR_PAIR((key_valid) ? 3 : 1));
         mvwaddwstr(frequencies_tab, FREQUENCIES_TAB_HEIGHT - 2,
                    ((FREQUENCIES_TAB_WIDTH - wcslen(key_validity_message)) / 2), key_validity_message);
-        wattroff(frequencies_tab, A_STANDOUT);
+        wattroff(frequencies_tab, COLOR_PAIR(1));
+        wattroff(frequencies_tab, COLOR_PAIR(3));
+    }
+
+    mvwhline(frequencies_tab, FREQUENCIES_TAB_HEIGHT - 15, 1, 0, FREQUENCIES_TAB_WIDTH - 2);
+
+    for (int i = 0; i < BIGRAMS_COUNT; i++) {
+        mvwprintw(frequencies_tab, FREQUENCIES_TAB_HEIGHT - 14 + i, 2, "%S = %lf",
+                  ((state.show_decoded) ? get_decoded_bigrams()[state.bigrams_indexes[i]] : get_bigrams()[state.bigrams_indexes[i]]),
+                  get_bigrams_frequencies()[state.bigrams_indexes[i]]);
+    }
+
+    mvwhline(expected_frequencies_tab, FREQUENCIES_TAB_HEIGHT - 15, 1, 0, FREQUENCIES_TAB_WIDTH - 2);
+
+    for (int i = 0; i < BIGRAMS_COUNT; i++) {
+        mvwprintw(expected_frequencies_tab, FREQUENCIES_TAB_HEIGHT - 14 + i, 2, "%S = %lf",
+                  FREQUENT_BIGRAMS_RU[state.bigrams_expected_indexes[i]],
+                  BIGRAMS_FREQUENCIES_RU[state.bigrams_expected_indexes[i]]);
     }
 
     box(frequencies_tab, 0, 0);
@@ -570,6 +593,10 @@ void main_page() {
     analysis_init();
     sort_indexes(get_frequencies(), state.indexes);
     sort_indexes(FREQUENCIES_RU, state.expected_indexes);
+
+    sort_indexes(get_bigrams_frequencies(), state.bigrams_indexes);
+    sort_indexes(BIGRAMS_FREQUENCIES_RU, state.bigrams_expected_indexes);
+
     wchar_t ch;
     int *key = get_key_ptr();
     do {
@@ -654,5 +681,6 @@ void ui_quit() {
     delwin(expected_frequencies_tab);
     delwin(words_tab);
     delwin(controls_tab);
+    curs_set(1);
     endwin();
 }

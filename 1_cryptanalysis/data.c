@@ -1,5 +1,30 @@
 #include "data.h"
 
+const wchar_t *FREQUENT_BIGRAMS_RU[] = {
+        L"ст",
+        L"то",
+        L"не",
+        L"на",
+        L"пр",
+        L"ка",
+        L"ко",
+        L"ра",
+        L"ро",
+        L"ль"
+};
+const double BIGRAMS_FREQUENCIES_RU[] = {
+        0.0168,
+        0.0147,
+        0.0133,
+        0.0125,
+        0.0116,
+        0.0110,
+        0.0105,
+        0.0098,
+        0.0095,
+        0.0088
+};
+
 const wchar_t *IMPOSSIBLE_COMBINATIONS_RU[] = {
         L"аы",
         L"аь",

@@ -25,8 +25,11 @@ typedef struct {
     wchar_t **words;
     wchar_t **decoded_words;
     wchar_t **decoded_words_sorted;
+    wchar_t **most_frequent_bigrams;
+    wchar_t **decoded_bigrams;
     int words_count;
     double frequencies[ALPHABET_SIZE];
+    double *bigrams_frequencies;
     int key[ALPHABET_SIZE];
     int ready;
     double min_valid_words;
@@ -50,6 +53,8 @@ void analysis_init();
 wchar_t *get_source_string();
 
 wchar_t *get_decoded_string();
+
+wchar_t **get_decoded_bigrams();
 
 double *get_frequencies();
 
@@ -80,5 +85,9 @@ void add_key_to_history();
 void undo_key_change();
 
 void redo_key_change();
+
+double *get_bigrams_frequencies();
+
+wchar_t **get_bigrams();
 
 #endif //INC_1_CRYPTANALYSIS_ANALYSIS_H

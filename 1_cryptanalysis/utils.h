@@ -21,18 +21,17 @@
         UNIQUE_COUNT == 1; \
     })
 
-#define DOES_CONTAIN(ARR, LEN, ELEMENT) \
+#define INDEX_OF(ARR, LEN, ELEMENT) \
     ({ \
-        int IS_IN = 0; \
+        int INDEX = -1; \
         for (int I = 0; I < LEN; I++) { \
             if ((ARR)[I] == (ELEMENT)) { \
-                IS_IN = 1; \
+                INDEX = I; \
                 break; \
             } \
         } \
-        IS_IN; \
+        INDEX; \
     })
-
 
 int wchar_to_array_index(wchar_t c);
 
@@ -55,6 +54,8 @@ int count_word_occurrences(const wchar_t *word);
 int char_index(const char *str, char ch);
 
 int wchar_index(const wchar_t *str, wchar_t ch);
+
+int wcs_index(const wchar_t **str_list, int list_len, wchar_t *str);
 
 int first_word_len(const wchar_t *str);
 

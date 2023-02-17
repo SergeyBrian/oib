@@ -168,6 +168,18 @@ int wchar_index(const wchar_t *str, wchar_t ch) {
     return -1;
 }
 
+int wcs_index(const wchar_t **str_list, int len, wchar_t *str) {
+    size_t i;
+
+    for (i = 0; i < len; i++) {
+        if (wcscmp(str_list[i], str) == 0) {
+            return (int) i;
+        }
+    }
+
+    return -1;
+}
+
 int char_index(const char *str, char ch) {
     char *ptr = strchr(str, ch);
 

@@ -44,6 +44,8 @@ typedef struct {
     int matching_word_index;
     wchar_t custom_match_words[MAX_WORD_LENGTH][MAX_WORDS];
     int custom_match_words_count;
+    int bigrams_indexes[MAX_BIGRAMS];
+    int bigrams_expected_indexes[MAX_BIGRAMS];
 } ui_state;
 
 void ui_init();
