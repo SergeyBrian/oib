@@ -53,6 +53,8 @@ void ui_init();
 
 void ui_set_page(ui_page page);
 
+void ui_set_wordlist_open();
+
 void ui_update();
 
 void ui_quit();

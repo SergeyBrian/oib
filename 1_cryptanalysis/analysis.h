@@ -94,6 +94,6 @@ wchar_t **get_bigrams();
 
 void set_wordlist(wchar_t **wordlist, int len);
 
-void auto_generate_key();
+void auto_generate_key(void (*callback)(double progress, int passes_count));
 
 #endif //INC_1_CRYPTANALYSIS_ANALYSIS_H

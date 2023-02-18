@@ -58,8 +58,8 @@ void print_string_with_word(const wchar_t *string, const wchar_t *word) {
 
 int main(int argc, char **argv) {
     setlocale(LC_ALL, "ru_RU.UTF-8");
-//    ui_init();
-//    ui_set_page(FILE_SELECTOR);
+    ui_init();
+    ui_set_page(FILE_SELECTOR);
 
     char *params[20] = {0};
 
@@ -67,12 +67,14 @@ int main(int argc, char **argv) {
         parse_arguments(argc, argv, params);
     }
 
+    if (params[WORDLIST_FILE_NAME] != NULL)  {
+        if (open_wordlist(params[WORDLIST_FILE_NAME])) {
+            ui_set_wordlist_open();
+        }
+    }
+
     if (params[INPUT_FILE_NAME] != NULL) {
         if (open_file(params[INPUT_FILE_NAME])) {
-            open_wordlist(params[WORDLIST_FILE_NAME]);
-            analysis_init();
-            auto_generate_key();
-            return 0;
             ui_set_page(MAIN_PAGE);
         }
     }

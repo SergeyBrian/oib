@@ -407,19 +407,22 @@ void set_wordlist(wchar_t **wordlist, int len) {
     state.wordlist_length = len;
 }
 
-void auto_generate_key() {
+void auto_generate_key(void(*callback)(double f, int m)) {
     wchar_t **words = state.decoded_words;
     int *used_matches = calloc(sizeof(int), state.wordlist_length);
     int l = state.words_count;
+    int passes = 0;
 
     // Iterate over words from longest to shortest
     // Find matching word from wordlist for every word
     // When all letters all assign, validate the key
     // If key not valid, reset all and repeat process, but choose new matching words
     do {
+        passes++;
         add_key_to_history();
         for (int i = 0; i < ALPHABET_SIZE; i++) state.key[i] = -1;
         for (int i = l-1; i >= 0; i--) {
+            callback((double)(l-i)/l, passes);
             wchar_t mask[MAX_WORD_LENGTH] = L"";
             generate_mask(words[i], mask);
             for (int j = 0; j < state.wordlist_length; j++) {

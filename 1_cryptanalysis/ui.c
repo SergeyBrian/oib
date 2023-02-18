@@ -6,6 +6,10 @@ static const wchar_t letters_controls_text[] = L"[Tab] Режим просмот
 static const wchar_t select_word_controls_text[] = L"[←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
 static const wchar_t analyse_word_controls_text[] = L"[BACKSPACE] Выбрать другое слово   [SPACE] Ввести свое слово   [←]/[→] Выбор слова   [ENTER] Подтвердить выбор";
 static const wchar_t common_controls_text[] = L"[W] Режим просмотра слов   [Q] Выйти";
+static const wchar_t auto_generation_message[] = L"Чтобы начать автоподбор ключа, нажмите [ENTER] (Эту операцию нельзя будет прервать)";
+static const wchar_t auto_generation_label[] = L"Автоматический подбор ключа";
+static const wchar_t auto_generation_pass_message[] = L"Проход #";
+
 static wchar_t *key_validity_message;
 
 #define TEXT_TAB_HEIGHT (LINES / 2)
@@ -16,6 +20,9 @@ static wchar_t *key_validity_message;
 
 #define FREQUENCIES_TAB_HEIGHT (LINES - 6)
 #define FREQUENCIES_TAB_WIDTH ((COLS / 3 - 2) / 2)
+
+#define PROGRESS_WINDOW_HEIGHT 4
+#define PROGRESS_WINDOW_WIDTH (COLS/2)
 
 #define CTRL(x) ((x) & 0x1f)
 
@@ -60,6 +67,8 @@ WINDOW *text_tab;
 WINDOW *controls_tab;
 WINDOW *file_window;
 WINDOW *custom_match_window;
+WINDOW *auto_generation_window;
+WINDOW *progress_bar_window;
 
 void ui_init() {
     initscr();
@@ -70,6 +79,7 @@ void ui_init() {
     init_pair(1, COLOR_BLACK, COLOR_YELLOW);
     init_pair(2, COLOR_WHITE, COLOR_RED);
     init_pair(3, COLOR_WHITE, COLOR_GREEN);
+    init_pair(4, COLOR_BLACK, COLOR_WHITE);
 
     state.height = LINES;
     state.width = COLS;
@@ -92,6 +102,9 @@ void ui_init() {
     expected_frequencies_tab = newwin(FREQUENCIES_TAB_HEIGHT, FREQUENCIES_TAB_WIDTH, 1,
                                       2 * COLS / 3 + (COLS / 3 - 2) / 2 + 1);
     custom_match_window = newwin(WORDS_TAB_HEIGHT, WORDS_TAB_WIDTH, 1 + LINES / 2, 1);
+    auto_generation_window = newwin(LINES, COLS, 0, 0);
+    progress_bar_window = newwin(PROGRESS_WINDOW_HEIGHT, PROGRESS_WINDOW_WIDTH, LINES - 5,
+                                 (COLS - PROGRESS_WINDOW_WIDTH) / 2);
 }
 
 void ui_set_page(ui_page page) {
@@ -99,8 +112,9 @@ void ui_set_page(ui_page page) {
 }
 
 
-void file_selector() {
+void file_selector(int wordlist_required) {
     curs_set(1);
+    echo();
     file_window = newwin(LINES / 2, COLS / 2, LINES / 4, COLS / 4);
     char input_filename[1000];
     char wordlist_filename[1000];
@@ -129,7 +143,7 @@ void file_selector() {
             show_file_open_error = 1;
         }
 
-        while (!state.is_wordlist_file_open) {
+        do {
             wclear(file_window);
             box(file_window, 0, 0);
 
@@ -143,18 +157,58 @@ void file_selector() {
 
 
             if (wscanw(file_window, "%s", wordlist_filename) == -1) {
+                state.current_page = MAIN_PAGE;
                 break;
             }
             if (open_wordlist(wordlist_filename)) {
+                read_wordlist();
                 state.is_wordlist_file_open = 1;
+                state.current_page = MAIN_PAGE;
                 show_file_open_error = 0;
                 break;
             }
             show_file_open_error = 1;
-        }
+        } while (wordlist_required && !state.is_wordlist_file_open);
     }
     curs_set(0);
+    noecho();
     delwin(file_window);
+}
+
+void draw_progress_bar(double progress, int pass) {
+    wclear(progress_bar_window);
+    box(progress_bar_window, 0, 0);
+    int real_progress = (int) (progress * (double) (PROGRESS_WINDOW_WIDTH));
+    mvwprintw(progress_bar_window, 0, 2, "%S%d", auto_generation_pass_message, pass);
+    wattron(progress_bar_window, COLOR_PAIR(4));
+    for (int i = 1; i < real_progress; i++) {
+        mvwaddch(progress_bar_window, 2, i, ' ');
+    }
+    wattroff(progress_bar_window, COLOR_PAIR(4));
+    wrefresh(progress_bar_window);
+}
+
+void draw_auto_generation_tab() {
+    if (!state.is_wordlist_file_open) {
+        state.current_page = FILE_SELECTOR;
+        file_selector(1);
+    }
+    if (!state.is_wordlist_file_open) return;
+
+    clear();
+    refresh();
+    mvwprintw(auto_generation_window, LINES / 2, (COLS - wcslen(auto_generation_message)) / 2, "%S",
+              auto_generation_message);
+    wrefresh(auto_generation_window);
+    if (getch() != '\n') return;
+    wclear(auto_generation_window);
+    box(auto_generation_window, 0, 0);
+    mvwprintw(auto_generation_window, 0, 2, "%S", auto_generation_label);
+    wrefresh(auto_generation_window);
+    auto_generate_key(draw_progress_bar);
+    state.show_decoded = 1;
+    clear();
+    refresh();
 }
 
 void draw_text_tab() {
@@ -562,12 +616,12 @@ void draw_frequencies_tab() {
     for (int i = 0; i < ALPHABET_SIZE; i++) {
         mvwprintw(frequencies_tab, 1 + i, 2, "%C = %lf", ALPHABET_RU[state.indexes[i]], frequencies[state.indexes[i]]);
         wchar_t suggested_letter = (key[state.indexes[i]] > -1) ? ALPHABET_RU[key[state.indexes[i]]] : L'?';
-        if (key[state.indexes[i]] != -1 && INDEX_OF(key, ALPHABET_SIZE, key[state.indexes[i]]) == -1) {
+        if (key[state.indexes[i]] != -1 && !IS_UNIQUE(key, ALPHABET_SIZE, key[state.indexes[i]])) {
             wattron(frequencies_tab, COLOR_PAIR(2));
         }
 
         if (state.word_view_mode != WORD_ANALYSIS && i == state.active_letter)
-            mvwprintw(frequencies_tab, 1 + i, 14, " [%C]", suggested_letter);
+            mvwprintw(frequencies_tab, 1 + i, 14, " [%C] ", suggested_letter);
         else
             mvwprintw(frequencies_tab, 1 + i, 14, "  %C ", suggested_letter);
 
@@ -595,7 +649,8 @@ void draw_frequencies_tab() {
 
     for (int i = 0; i < BIGRAMS_COUNT; i++) {
         mvwprintw(frequencies_tab, FREQUENCIES_TAB_HEIGHT - 14 + i, 2, "%S = %lf",
-                  ((state.show_decoded) ? get_decoded_bigrams()[state.bigrams_indexes[i]] : get_bigrams()[state.bigrams_indexes[i]]),
+                  ((state.show_decoded) ? get_decoded_bigrams()[state.bigrams_indexes[i]]
+                                        : get_bigrams()[state.bigrams_indexes[i]]),
                   get_bigrams_frequencies()[state.bigrams_indexes[i]]);
     }
 
@@ -617,6 +672,7 @@ void draw_frequencies_tab() {
 
 void main_page() {
     noecho();
+    state.is_input_file_open = 1;
     keypad(stdscr, true);
     analysis_init();
     sort_indexes(get_frequencies(), state.indexes);
@@ -670,6 +726,9 @@ void main_page() {
                 case 's':
                     add_key_to_history();
                     break;
+                case 'a':
+                    draw_auto_generation_tab();
+                    break;
             }
         }
         state.skip_input = 0;
@@ -688,7 +747,7 @@ void main_page() {
 void render_page(ui_page page) {
     switch (page) {
         case FILE_SELECTOR:
-            file_selector();
+            file_selector(0);
             break;
         case MAIN_PAGE:
             main_page();
@@ -711,4 +770,8 @@ void ui_quit() {
     delwin(controls_tab);
     curs_set(1);
     endwin();
+}
+
+void ui_set_wordlist_open() {
+    state.is_wordlist_file_open = 1;
 }
