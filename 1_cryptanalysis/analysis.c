@@ -1,7 +1,63 @@
 #include "analysis.h"
 
+#define VARIABLE_LETTERS_COUNT 16
+
 static analysis_state state;
-static const wchar_t variable_symbols[10] = L"_@#$%^&*+=";
+static const wchar_t variable_symbols[VARIABLE_LETTERS_COUNT] = L"DFGIJLNQRSTUVWYZ";
+
+void analysis_init() {
+    int size = 100000;
+    if (state.ready) return;
+
+    state.bigrams_frequencies = (double *) calloc(sizeof(double), MAX_BIGRAMS);
+
+    state.most_frequent_bigrams = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_BIGRAMS);
+    for (int i = 0; i < MAX_BIGRAMS; i++) {
+        state.most_frequent_bigrams[i] = (wchar_t *) calloc(sizeof(wchar_t), 2);
+    }
+
+    state.decoded_bigrams = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_BIGRAMS);
+    for (int i = 0; i < MAX_BIGRAMS; i++) {
+        state.decoded_bigrams[i] = (wchar_t *) calloc(sizeof(wchar_t), 2);
+    }
+
+    state.words = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
+    for (int i = 0; i < MAX_WORDS; i++) {
+        state.words[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
+    }
+
+    state.decoded_words = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
+    for (int i = 0; i < MAX_WORDS; i++) {
+        state.decoded_words[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
+    }
+
+    state.decoded_words_sorted = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
+    for (int i = 0; i < MAX_WORDS; i++) {
+        state.decoded_words_sorted[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
+    }
+
+    state.ready = 1;
+
+    wchar_t *result = (wchar_t *) malloc(sizeof(wchar_t) * size);
+
+    state.string = readfile();
+    state.decoded_string = result;
+    state.words_count = 0;
+    state.min_valid_words = DEFAULT_MIN_VALID_WORDS;
+    state.history_index = -1;
+
+    read_wordlist();
+
+
+    measure_letters_frequency();
+    double *frequencies = get_frequencies();
+    match_frequencies(frequencies, FREQUENCIES_RU, state.key);
+    add_key_to_history();
+
+
+    sort_words_by_length(state.string, state.words);
+    apply_key();
+}
 
 void measure_letters_frequency() {
     unsigned int l = wcslen(state.string);
@@ -22,7 +78,7 @@ void measure_letters_frequency() {
             int bigram_index = wcs_index(state.most_frequent_bigrams, MAX_BIGRAMS, bigram);
             if (bigram_index == -1) {
                 wcscpy(state.most_frequent_bigrams[bigrams_count], bigram);
-                state.bigrams_frequencies[bigrams_count++] = 0;
+                state.bigrams_frequencies[bigrams_count++] = 1;
             } else {
                 state.bigrams_frequencies[bigram_index]++;
             }
@@ -120,58 +176,6 @@ int *get_key_ptr() {
     return state.key;
 }
 
-void analysis_init() {
-    int size = 100000;
-    if (state.ready) return;
-
-    state.bigrams_frequencies = (double *) calloc(sizeof(double), MAX_BIGRAMS);
-
-    state.most_frequent_bigrams = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_BIGRAMS);
-    for (int i = 0; i < MAX_BIGRAMS; i++) {
-        state.most_frequent_bigrams[i] = (wchar_t *) calloc(sizeof(wchar_t), 2);
-    }
-
-    state.decoded_bigrams = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_BIGRAMS);
-    for (int i = 0; i < MAX_BIGRAMS; i++) {
-        state.decoded_bigrams[i] = (wchar_t *) calloc(sizeof(wchar_t), 2);
-    }
-
-    state.words = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
-    for (int i = 0; i < MAX_WORDS; i++) {
-        state.words[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
-    }
-
-    state.decoded_words = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
-    for (int i = 0; i < MAX_WORDS; i++) {
-        state.decoded_words[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
-    }
-
-    state.decoded_words_sorted = (wchar_t **) malloc(sizeof(wchar_t *) * MAX_WORDS);
-    for (int i = 0; i < MAX_WORDS; i++) {
-        state.decoded_words_sorted[i] = (wchar_t *) calloc(sizeof(wchar_t), MAX_WORD_LENGTH);
-    }
-
-    state.ready = 1;
-
-    wchar_t *result = (wchar_t *) malloc(sizeof(wchar_t) * size);
-
-    state.string = readfile();
-    state.decoded_string = result;
-    state.words_count = 0;
-    state.min_valid_words = DEFAULT_MIN_VALID_WORDS;
-    state.history_index = -1;
-
-
-    measure_letters_frequency();
-    double *frequencies = get_frequencies();
-    match_frequencies(frequencies, FREQUENCIES_RU, state.key);
-    add_key_to_history();
-
-
-    sort_words_by_length(state.string, state.words);
-    apply_key();
-}
-
 wchar_t *get_source_string() {
     return state.string;
 }
@@ -235,7 +239,7 @@ match_type does_match_mask(const wchar_t *string, const wchar_t *mask) {
 
     if (l != wcslen(mask)) return NO_MATCH;
     for (int i = 0; i < l; i++) {
-        if (iswalpha(mask[i])) {
+        if (iswlower(mask[i])) {
             if (string[i] != mask[i]) return NO_MATCH;
             continue;
         }
@@ -251,7 +255,7 @@ match_type does_match_mask(const wchar_t *string, const wchar_t *mask) {
             }
             continue;
         }
-        if (variables[wchar_index(variable_symbols, mask[i])] != string[i]) return NO_MATCH;
+        if (variables[INDEX_OF(variable_symbols, VARIABLE_LETTERS_COUNT, mask[i])] != string[i]) return NO_MATCH;
     }
     return result;
 }
@@ -396,4 +400,36 @@ wchar_t **get_decoded_bigrams() {
         apply_key_to_str(state.most_frequent_bigrams[i], state.decoded_bigrams[i]);
     }
     return state.decoded_bigrams;
+}
+
+void set_wordlist(wchar_t **wordlist, int len) {
+    state.wordlist = wordlist;
+    state.wordlist_length = len;
+}
+
+void auto_generate_key() {
+    wchar_t **words = state.decoded_words;
+    int *used_matches = calloc(sizeof(int), state.wordlist_length);
+    int l = state.words_count;
+
+    // Iterate over words from longest to shortest
+    // Find matching word from wordlist for every word
+    // When all letters all assign, validate the key
+    // If key not valid, reset all and repeat process, but choose new matching words
+    do {
+        add_key_to_history();
+        for (int i = 0; i < ALPHABET_SIZE; i++) state.key[i] = -1;
+        for (int i = l-1; i >= 0; i--) {
+            wchar_t mask[MAX_WORD_LENGTH] = L"";
+            generate_mask(words[i], mask);
+            for (int j = 0; j < state.wordlist_length; j++) {
+                if (used_matches[j]) continue;
+                if (does_match_mask(state.wordlist[j], mask) != STRICT_MATCH) continue;
+                generate_key_from_matches(state.words[i], state.wordlist[j]);
+                apply_key();
+                used_matches[j] = 1;
+                break;
+            }
+        }
+    } while (!is_key_valid());
 }

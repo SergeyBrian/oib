@@ -10,21 +10,10 @@
 #include "ui.h"
 
 
-#define IS_UNIQUE(ARR, LEN, ELEMENT) \
-    ({ \
-        int UNIQUE_COUNT = 0; \
-        for (int I = 0; I < LEN; I++) { \
-            if ((ARR)[I] == (ELEMENT)) { \
-                UNIQUE_COUNT++; \
-            } \
-        } \
-        UNIQUE_COUNT == 1; \
-    })
-
 #define INDEX_OF(ARR, LEN, ELEMENT) \
     ({ \
         int INDEX = -1; \
-        for (int I = 0; I < LEN; I++) { \
+        for (int I = 0; I < (LEN); I++) { \
             if ((ARR)[I] == (ELEMENT)) { \
                 INDEX = I; \
                 break; \

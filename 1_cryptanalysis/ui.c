@@ -98,32 +98,60 @@ void ui_set_page(ui_page page) {
     state.current_page = page;
 }
 
-int show_file_open_error = 0;
 
 void file_selector() {
     curs_set(1);
-    while (!state.is_input_file_open) {
-        file_window = newwin(LINES / 2, COLS / 2, LINES / 4, COLS / 4);
-        box(file_window, 0, 0);
+    file_window = newwin(LINES / 2, COLS / 2, LINES / 4, COLS / 4);
+    char input_filename[1000];
+    char wordlist_filename[1000];
+    int is_input_active = 0;
+    int show_file_open_error = 0;
 
-        if (show_file_open_error) {
-            mvwprintw(file_window, 0, 2, "Can't open file!");
+    while (state.current_page == FILE_SELECTOR) {
+        while (!state.is_input_file_open) {
+            wclear(file_window);
+            box(file_window, 0, 0);
+
+            if (show_file_open_error) {
+            }
+
+            mvwprintw(file_window, 2, 2, "Input file name: ");
+            wrefresh(file_window);
+            wscanw(file_window, "%s", input_filename);
+
+            if (open_file(input_filename)) {
+                state.current_page = MAIN_PAGE;
+                show_file_open_error = 0;
+                state.is_input_file_open = 1;
+                break;
+            }
+
+            show_file_open_error = 1;
         }
 
+        while (!state.is_wordlist_file_open) {
+            wclear(file_window);
+            box(file_window, 0, 0);
 
-        mvwprintw(file_window, 1, 2, "Enter input file name: ");
-        wrefresh(file_window);
-        char filename[1000];
-        wscanw(file_window, "%s", filename);
+            if (show_file_open_error) {
+                mvwprintw(file_window, 0, 2, "Can't open file!");
+            }
 
-        if (open_file(filename)) {
-            state.current_page = MAIN_PAGE;
-            show_file_open_error = 0;
-            state.is_input_file_open = 1;
-            break;
+            mvwprintw(file_window, 2, 2, "Input file name: %s", input_filename);
+            mvwprintw(file_window, 3, 2, "Wordlist file name (leave blank to use default wordlist): ");
+            wrefresh(file_window);
+
+
+            if (wscanw(file_window, "%s", wordlist_filename) == -1) {
+                break;
+            }
+            if (open_wordlist(wordlist_filename)) {
+                state.is_wordlist_file_open = 1;
+                show_file_open_error = 0;
+                break;
+            }
+            show_file_open_error = 1;
         }
-
-        show_file_open_error = 1;
     }
     curs_set(0);
     delwin(file_window);
@@ -534,7 +562,7 @@ void draw_frequencies_tab() {
     for (int i = 0; i < ALPHABET_SIZE; i++) {
         mvwprintw(frequencies_tab, 1 + i, 2, "%C = %lf", ALPHABET_RU[state.indexes[i]], frequencies[state.indexes[i]]);
         wchar_t suggested_letter = (key[state.indexes[i]] > -1) ? ALPHABET_RU[key[state.indexes[i]]] : L'?';
-        if (key[state.indexes[i]] != -1 && !IS_UNIQUE(key, ALPHABET_SIZE, key[state.indexes[i]])) {
+        if (key[state.indexes[i]] != -1 && INDEX_OF(key, ALPHABET_SIZE, key[state.indexes[i]]) == -1) {
             wattron(frequencies_tab, COLOR_PAIR(2));
         }
 

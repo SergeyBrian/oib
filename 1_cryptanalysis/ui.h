@@ -46,6 +46,7 @@ typedef struct {
     int custom_match_words_count;
     int bigrams_indexes[MAX_BIGRAMS];
     int bigrams_expected_indexes[MAX_BIGRAMS];
+    int is_wordlist_file_open;
 } ui_state;
 
 void ui_init();

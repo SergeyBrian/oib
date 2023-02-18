@@ -9,7 +9,9 @@
 
 
 int open_file(char *filename);
+int open_wordlist(char *filename);
 
 wchar_t *readfile();
+wchar_t **read_wordlist();
 
 #endif //INC_1_CRYPTANALYSIS_FS_H

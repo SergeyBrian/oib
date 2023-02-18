@@ -27,6 +27,8 @@ typedef struct {
     wchar_t **decoded_words_sorted;
     wchar_t **most_frequent_bigrams;
     wchar_t **decoded_bigrams;
+    wchar_t **wordlist;
+    int wordlist_length;
     int words_count;
     double frequencies[ALPHABET_SIZE];
     double *bigrams_frequencies;
@@ -89,5 +91,9 @@ void redo_key_change();
 double *get_bigrams_frequencies();
 
 wchar_t **get_bigrams();
+
+void set_wordlist(wchar_t **wordlist, int len);
+
+void auto_generate_key();
 
 #endif //INC_1_CRYPTANALYSIS_ANALYSIS_H
