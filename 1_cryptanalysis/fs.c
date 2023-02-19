@@ -16,12 +16,12 @@ int open_wordlist(char *filename) {
 wchar_t *readfile() {
     int size = MAX_TEXT_LENGTH;
 
-    wchar_t *buff = (wchar_t *) malloc(sizeof(wchar_t) * size);
+    wchar_t *buff = (wchar_t *) calloc(sizeof(wchar_t), size);
 
     fgetws(buff, size, input_file);
+    int l = wcslen(buff);
     if (buff[wcslen(buff) - 1] == '\n') buff[wcslen(buff) - 1] = '\0';
 
-    unsigned int l = wcslen(buff);
     for (int i = 0; i < l; i++) {
         if (buff[i] == L'ё' || buff[i] == L'Ё') {
             buff[i] = L'е';

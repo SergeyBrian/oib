@@ -87,7 +87,8 @@ void sort_words_by_function(const wchar_t *input_str, wchar_t *words[], unsigned
             while (iswalpha(*p)) {
                 ++p;
             }
-            *p++ = L'\0';
+            if (*p != L'\0')
+                *p++ = L'\0';
             wchar_t word[MAX_WORD_LENGTH];
             wcscpy(word, word_start);
             int is_duplicate = 0;
