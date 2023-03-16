@@ -78,8 +78,8 @@ void sort_words_by_function(const wchar_t *input_str, wchar_t *words[], unsigned
                             int desc) {
     int word_count = 0;
 
-    wchar_t *str_cpy = calloc(sizeof(wchar_t), wcslen(input_str));
-    wcscpy(str_cpy, input_str);
+    getchar();
+    wchar_t *str_cpy = wcsdup(input_str);
     wchar_t *p = str_cpy;
     while (*p != L'\0' && word_count < MAX_WORDS) {
         if (iswalpha(*p)) {
