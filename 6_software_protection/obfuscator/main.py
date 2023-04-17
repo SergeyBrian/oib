@@ -127,7 +127,6 @@ class ReplaceVisitor(c_ast.NodeVisitor):
         self.new_function_names = new_function_names
         self.new_variable_names = new_variable_names
         self.new_type_names = new_type_names
-        
 
     def visit_FuncCall(self, node):
         for item in new_names:
@@ -142,7 +141,6 @@ class ReplaceVisitor(c_ast.NodeVisitor):
             for node_item in node.body.block_items:
                 self.visit(node_item)
         self.visit(node.decl)
-
 
     def visit_TypeDecl(self, node):
         for item in new_names:
@@ -186,22 +184,33 @@ def replace_names(ast):
 
 
 def print_ast(ast):
+    code = ''
+    for t in new_type_names:
+        code += f"typedef {t['old_name']} {t['new_name']};"
+
+    code += '\n'
+
     generator = c_generator.CGenerator()
-    code = generator.visit(ast)
+    for node in ast.ext:
+        if 'fake' in str(node.coord):
+            continue
+        code += generator.visit(node)
     print(code)
 
 
 def main():
     global new_names
 
-    ast = parse_file("p_main.c", use_cpp=False,
-                     cpp_args=r'-Iutils/fake_libc_include')
+    filename = "p_main.c"
+
+    ast = parse_file(filename, use_cpp=False)
 
     show_func_defs(ast)
     generate_new_names()
 
     new_names = new_function_names + new_variable_names + new_type_names
     replace_names(ast)
+
     print_ast(ast)
 
 
