@@ -48,8 +48,11 @@ class TypeDeclVisitor(c_ast.NodeVisitor):
     def visit_Decl(self, node):
         if isinstance(node.type, c_ast.FuncDecl):
             return
-        print('Declared type %s' % node.type.type.names[0])
-        typedefs.append(node)
+        if not hasattr(node, 'names'):
+            self.visit(node.type)
+        else:
+            print('Declared type %s' % node.type.type.names[0])
+            typedefs.append(node)
 
 
 class VariableDeclVisitor(c_ast.NodeVisitor):
@@ -213,11 +216,13 @@ def read_config(config_file):
 
     input_section = config['input']
     output_section = config['output']
+    param_section = config['config']
 
     input_file = input_section['data']
     output_file = output_section['data']
+    garbage_variables_count = int(param_section['garbage_variables'])
 
-    return input_file, output_file
+    return input_file, output_file, garbage_variables_count
 
 
 def prepare_input_file(input_file):
@@ -225,9 +230,38 @@ def prepare_input_file(input_file):
     return f'p_{input_file}'
 
 
+# class InsertRandomDeclarations(c_ast.NodeVisitor):
+#     def visit_FuncDef(self, node):
+#         var_name = get_random_string()
+#         var_type = choice(['int', 'char', 'double'])
+#         var = c_ast.Decl(var_name, [], [], [], [], var_type, [], [])
+#         node.body.block_items.insert(0, var)
+#         pass
+
+
+def add_garbage_variables(obfuscated_code, garbage_variables_count):
+    result = ''
+    lines = obfuscated_code.split('\n')
+    for line_num, line in enumerate(lines[:-1]):
+        if any([c in line for c in ['{', '}', '#', 'for', 'while', 'do', 'if', 'else']]) or '{' in lines[line_num + 1]:
+            if '#' in line:
+                result += f'\n{line}\n'
+            else:
+                result += line
+            continue
+        var_begin = ''
+        var_end = ''
+        for i in range(garbage_variables_count):
+            # var_begin += f' {choice(["int", "char", "double"])} {"*"*randint(0, 3)}{get_random_string()};'
+            var_end += f' {choice(["int", "char", "double"])} {"*" * randint(0, 3)}{get_random_string()};'
+
+        result += f'{var_begin}{line}{var_end}'
+    return result
+
+
 def main():
     global new_names
-    input_file, output_file = read_config("config.ini")
+    input_file, output_file, garbage_variables_count = read_config("config.ini")
 
     prepared_input_file = prepare_input_file(input_file)
 
@@ -242,7 +276,7 @@ def main():
     obfuscated_code = ast_to_str(ast, input_file)
 
     with open(output_file, 'w') as out_file:
-        out_file.write(obfuscated_code)
+        out_file.write(add_garbage_variables(obfuscated_code, garbage_variables_count))
 
 
 if __name__ == "__main__":
