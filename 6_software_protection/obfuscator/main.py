@@ -1,3 +1,6 @@
+from string import ascii_lowercase, ascii_letters, ascii_uppercase, digits
+from random import choice, choices, randint
+
 from pycparser import c_ast, parse_file
 
 function_decs = []
@@ -5,6 +8,22 @@ function_calls = []
 typedefs = []
 variable_decs = []
 variable_uses = []
+
+new_function_names = {}
+new_variable_names = {}
+new_type_names = {}
+
+used_names = []
+
+
+def get_random_string() -> str:
+    first_char = choice(ascii_letters)
+    remaining_chars = ''.join(choices(ascii_uppercase + ascii_lowercase + digits, k=randint(3, 10)))
+    result = first_char + remaining_chars
+    if result in used_names:
+        return get_random_string()
+    used_names.append(result)
+    return result
 
 
 class FuncDefVisitor(c_ast.NodeVisitor):
@@ -66,6 +85,13 @@ def get_all_function_names(ast):
 
 def main():
     show_func_defs("p_main.c")
+    new_type_names = {f"{i}": {"old_name": typedefs[i].type.type.names[0], "new_name": get_random_string()} for i in
+                      range(len(typedefs))}
+    new_variable_names = {f"{i}": {"old_name": variable_decs[i].name, "new_name": get_random_string()} for i in
+                          range(len(variable_decs))}
+    new_function_names = {f"{i}": {"old_name": function_decs[i].decl.name, "new_name": get_random_string()} for i in
+                          range(len(function_decs))}
+    pass
 
 
 if __name__ == "__main__":
