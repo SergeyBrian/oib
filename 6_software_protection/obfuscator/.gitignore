@@ -1,0 +1,7 @@
+.idea/
+venv/
+*.swp
+fake_libc_include/
+prep_*
+p_*
+*.c
