@@ -1,3 +1,5 @@
+import configparser
+import os
 from string import ascii_lowercase, ascii_letters, ascii_uppercase, digits
 from random import choice, choices, randint
 
@@ -183,10 +185,16 @@ def replace_names(ast):
     id_visitor.visit(ast)
 
 
-def print_ast(ast):
+def ast_to_str(ast, input_file):
     code = ''
+    with open(input_file, 'r') as file:
+        for line in file:
+            if '#include' in line:
+                code += f'{line}\n'
+
     for t in new_type_names:
-        code += f"typedef {t['old_name']} {t['new_name']};"
+        if t['old_name'] != 'atomic_bool':
+            code += f"typedef {t['old_name']} {t['new_name']};"
 
     code += '\n'
 
@@ -195,15 +203,35 @@ def print_ast(ast):
         if 'fake' in str(node.coord):
             continue
         code += generator.visit(node)
-    print(code)
+
+    return code
+
+
+def read_config(config_file):
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    input_section = config['input']
+    output_section = config['output']
+
+    input_file = input_section['data']
+    output_file = output_section['data']
+
+    return input_file, output_file
+
+
+def prepare_input_file(input_file):
+    os.system(f'gcc -E -Ifake_libc_include {input_file} > p_{input_file}')
+    return f'p_{input_file}'
 
 
 def main():
     global new_names
+    input_file, output_file = read_config("config.ini")
 
-    filename = "p_main.c"
+    prepared_input_file = prepare_input_file(input_file)
 
-    ast = parse_file(filename, use_cpp=False)
+    ast = parse_file(prepared_input_file)
 
     show_func_defs(ast)
     generate_new_names()
@@ -211,7 +239,10 @@ def main():
     new_names = new_function_names + new_variable_names + new_type_names
     replace_names(ast)
 
-    print_ast(ast)
+    obfuscated_code = ast_to_str(ast, input_file)
+
+    with open(output_file, 'w') as out_file:
+        out_file.write(obfuscated_code)
 
 
 if __name__ == "__main__":

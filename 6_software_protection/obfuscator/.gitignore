@@ -4,4 +4,5 @@ venv/
 fake_libc_include/
 prep_*
 p_*
+o_*
 *.c
