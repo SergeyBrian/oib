@@ -100,7 +100,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         } else {
             printf("recv failed: %d\n", WSAGetLastError());
         }
-        Sleep(10000);
+        Sleep(10*1000*30);
     }
 
 //    remove(file_name);
